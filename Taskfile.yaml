@@ -2,5 +2,11 @@ version: "3"
 
 tasks:
   oas-download:
+    desc: "Download the OpenAPI Specification for n8n"
     cmds:
       - curl -sSLf https://docs.n8n.io/api/v1/openapi.yml > openapi.yml
+
+  cli:
+    desc: "Run the n8n CLI"
+    cmds:
+      - go run ./main.go {{.CLI_ARGS}}

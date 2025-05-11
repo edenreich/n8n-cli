@@ -1,9 +1,53 @@
 # n8n-cli
 
-A simple n8n cli to sync workflows from Github to n8n using GitOps
+Command line interface for managing n8n workflows.
 
-## Motivation
+## Installation
 
-Currently, the official n8n cli is not very straightforward to use. Even running n8n --help throws a bunch of errors.
+```bash
+go install github.com/edenreich/n8n-cli@latest
+```
 
-This cli is a simple rest client for the OpenAPI spec provided by n8n. The initial goal is to have a good way to sync workflows from Github to n8n using GitOps.
+## Configuration
+
+Create a `.env` file with the following variables:
+
+```
+N8N_API_KEY=your_n8n_api_key
+N8N_INSTANCE_URL=https://your-instance.n8n.cloud
+```
+
+You can generate an API key in the n8n UI under Settings > API.
+
+## Commands
+
+### Sync
+
+Synchronize JSON workflows from a local directory to an n8n instance:
+
+```bash
+n8n-cli sync --directory hack/workflows
+```
+
+Options:
+- `--directory, -d`: Directory containing workflow JSON files (default: "hack/workflows")
+- `--activate-all, -a`: Activate all workflows after synchronization
+- `--dry-run, -n`: Show what would be done without making changes
+- `--verbose, -v`: Show detailed output during synchronization
+
+Example:
+```bash
+# Sync all workflows and activate them
+n8n-cli sync --activate-all
+
+# Test without making changes
+n8n-cli sync --dry-run
+```
+
+## Workflow File Structure
+
+Workflow files should be valid n8n workflow JSON files. The sync command will:
+
+1. Create new workflows for files without an ID or with an ID that doesn't exist on the n8n instance
+2. Update existing workflows that have a matching ID
+3. Activate workflows based on the "active" property in the JSON file or if --activate-all is used
