@@ -22,16 +22,25 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - ubuntu-24.04
-        arch:
-          - amd64
-          - arm64
         include:
-          - arch: amd64
+          # Linux builds
+          - os: ubuntu-24.04
+            arch: amd64
             go-arch: amd64
-          - arch: arm64
+            goos: linux
+          - os: ubuntu-24.04-arm
+            arch: arm64
             go-arch: arm64
+            goos: linux
+          # macOS builds
+          - os: macos-latest
+            arch: amd64
+            go-arch: amd64
+            goos: darwin
+          - os: macos-latest
+            arch: arm64
+            go-arch: arm64
+            goos: darwin
 
     steps:
       - name: Check out code
@@ -44,7 +53,7 @@ jobs:
 
       - name: Build binary
         env:
-          GOOS: linux
+          GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.go-arch }}
         run: |
           APP_NAME=n8n-cli
@@ -55,14 +64,14 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/}
             VERSION=${VERSION#v}
           fi
-          echo "Building ${APP_NAME} version ${VERSION} for linux_${{ matrix.arch }}"
+          echo "Building ${APP_NAME} version ${VERSION} for ${{ matrix.goos }}_${{ matrix.arch }}"
           mkdir -p dist
-          go build -v -o dist/${APP_NAME}_linux_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
+          go build -v -o dist/${APP_NAME}_${{ matrix.goos }}_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}_${{ matrix.arch }}_artifacts
+          name: ${{ matrix.goos }}_${{ matrix.arch }}_artifacts
           path: dist/
 
   upload:
