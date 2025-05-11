@@ -55,6 +55,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.go-arch }}
+          CGO_ENABLED: 0
         run: |
           APP_NAME=n8n-cli
           if [ -n "${{ github.event.inputs.version }}" ]; then
@@ -66,7 +67,7 @@ jobs:
           fi
           echo "Building ${APP_NAME} version ${VERSION} for ${{ matrix.goos }}_${{ matrix.arch }}"
           mkdir -p dist
-          go build -v -o dist/${APP_NAME}_${{ matrix.goos }}_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
+          go build -v -o dist/${APP_NAME}_${{ matrix.goos }}_${{ matrix.arch }} -ldflags "-s -w -X main.Version=${VERSION}" .
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
