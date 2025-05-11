@@ -92,24 +92,3 @@ Workflow files should be valid n8n workflow JSON files. The sync command will:
 1. Create new workflows for files without an ID or with an ID that doesn't exist on the n8n instance
 2. Update existing workflows that have a matching ID
 3. Activate workflows based on the "active" property in the JSON file or if --activate-all is used
-
-## About the Installer
-
-The install script (`install.sh`) provides several features:
-
-- **Automatic OS Detection**: Supports Linux, macOS, and Windows (via WSL/Cygwin/MSYS)
-- **Automatic Architecture Detection**: Supports amd64, 386, arm, and arm64 architectures
-- **Latest Version**: Automatically fetches and installs the latest release from GitHub
-- **Privilege Management**: Uses sudo only when necessary for installation
-- **Verification**: Confirms successful installation and provides next steps
-
-### Custom Installation
-
-If you need to install to a different directory, download the script and modify the `INSTALL_DIR` variable before running:
-
-```bash
-curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh > install.sh
-chmod +x install.sh
-# Edit install.sh to change INSTALL_DIR if needed
-./install.sh
-```
