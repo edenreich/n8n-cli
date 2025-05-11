@@ -1,6 +1,24 @@
-# n8n-cli
+<h1 align="center">N8N Command Line Interface (CLI)</h1>
 
-Command line interface for managing n8n workflows.
+<p align="center">
+  <a href="https://github.com/edenreich/n8n-cli/actions/workflows/ci.yml">
+    <img src="https://github.com/edenreich/n8n-cli/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://github.com/edenreich/n8n-cli/releases">
+    <img src="https://img.shields.io/github/v/release/edenreich/n8n-cli" alt="Latest Release">
+  </a>
+  <a href="https://github.com/edenreich/n8n-cli/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/edenreich/n8n-cli" alt="License">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/edenreich/n8n-cli">
+    <img src="https://goreportcard.com/badge/github.com/edenreich/n8n-cli" alt="Go Report Card">
+  </a>
+  <a href="https://pkg.go.dev/github.com/edenreich/n8n-cli">
+    <img src="https://pkg.go.dev/badge/github.com/edenreich/n8n-cli.svg" alt="Go Reference">
+  </a>
+</p>
+
+<p align="center">Command line interface for managing n8n workflows.</p>
 
 ## Installation
 
