@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: "lts/*"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5.5.0
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      - name: Install semantic-release and plugins
+        run: |
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
+
+      - name: Create release with semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view v0.1.0 >/dev/null 2>&1; then
+            gh release create v0.1.0 --title "Initial Release" --notes "Initial Release" --target main
+          fi
+
+          DRY_OUTPUT=$(semantic-release --dry-run 2>&1 || true)
+
+          if $(echo "$DRY_OUTPUT" | grep -q "no new version is released"); then
+            echo "No new release needed"
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          VERSION=$(echo "$DRY_OUTPUT" | grep -o "The next release version is [0-9]\+\.[0-9]\+\.[0-9]\+\(-rc\.[0-9]\+\)\?" | cut -d ' ' -f6)
+          if [ -z "$VERSION" ]; then
+            echo "Error: Could not determine version"
+            echo "Output: $DRY_OUTPUT"
+            exit 1
+          fi
+
+          echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+
+          if semantic-release; then
+            echo "Successfully released version $VERSION"
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+          else
+            echo "Release failed"
+            exit 1
+          fi

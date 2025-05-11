@@ -1,0 +1,70 @@
+name: Release Artifacts
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}_${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-24.04
+        arch:
+          - amd64
+          - arm64
+        include:
+          - arch: amd64
+            go-arch: amd64
+          - arch: arm64
+            go-arch: arm64
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@v5.5.0
+        with:
+          go-version: "1.24"
+
+      - name: Build binary
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.go-arch }}
+        run: |
+          APP_NAME=n8n-cli
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "Building ${APP_NAME} version ${VERSION} for linux_${{ matrix.arch }}"
+          go build -v -o dist/${APP_NAME}_linux_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
+
+  upload:
+    name: Upload Artifacts
+    runs-on: ubuntu-24.04
+    needs:
+      - build_artifacts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Upload Artifacts to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          for file in dist/*; do
+            if [ -d "$file" ]; then
+              echo "Skipping directory: $file"
+              continue
+            fi
+
+            echo "Uploading $file to release ${{ env.VERSION }}"
+            gh release upload ${{ env.VERSION }} "$file" --clobber
+          done
