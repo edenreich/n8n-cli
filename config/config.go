@@ -42,7 +42,6 @@ var globalConfig *Config
 
 // LoadConfig loads the configuration from environment variables
 func LoadConfig() (*Config, error) {
-	// Load environment variables from .env file if it exists
 	_ = godotenv.Load()
 
 	apiToken := os.Getenv("N8N_API_KEY")
