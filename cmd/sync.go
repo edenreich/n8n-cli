@@ -150,9 +150,7 @@ func loadEnv() error {
 
 // ensureAPIPrefix ensures the URL has the /api/v1 prefix
 func ensureAPIPrefix(url string) string {
-	if strings.HasSuffix(url, "/") {
-		url = url[:len(url)-1]
-	}
+	url = strings.TrimSuffix(url, "/")
 
 	if !strings.HasSuffix(url, "/api/v1") {
 		return url + "/api/v1"
@@ -294,7 +292,11 @@ func checkWorkflowExists(id, apiBaseURL, apiToken string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
+		}
+	}()
 
 	return resp.StatusCode == http.StatusOK, nil
 }
@@ -316,7 +318,11 @@ func createWorkflow(data []byte, apiBaseURL, apiToken string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -359,7 +365,11 @@ func updateWorkflow(id string, data []byte, apiBaseURL, apiToken string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -389,7 +399,11 @@ func activateWorkflow(id string, shouldActivate bool, apiBaseURL, apiToken strin
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
