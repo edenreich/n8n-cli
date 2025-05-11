@@ -1,0 +1,73 @@
+{
+  "name": "n8n CLI Development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2":{}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml",
+        "task.vscode-task",
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker",
+        "esbenp.prettier-vscode",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github",
+        "yzhang.markdown-all-in-one",
+        "ipedrazas.kubernetes-snippets",
+        "ms-vscode.go"
+      ],
+      "settings": {
+        "files.insertFinalNewline": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": ["--fast"],
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "go.useLanguageServer": true,
+        "go.toolsEnvVars": {
+          "GO111MODULE": "on"
+        },
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[go]": {
+          "editor.defaultFormatter": "golang.go"
+        },
+        "editor.renderWhitespace": "all",
+        "cSpell.enabled": true,
+        "cSpell.files": ["**/*.md"],
+        "git.enableCommitSigning": true,
+        "dev.containers.copyGitConfig": true,
+        "githubPullRequests.experimental.chat": true,
+        "githubPullRequests.experimental.notificationsView": true,
+        "mcp": {
+          "servers": {
+            "fetch": {
+              "command": "docker",
+              "args": ["run", "-i", "--rm", "mcp/fetch"]
+            },
+            "Context7": {
+              "command": "docker",
+              "args": [
+                "run",
+                "-i",
+                "--rm",
+                "node:lts",
+                "npx",
+                "-y",
+                "@upstash/context7-mcp@latest"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "workspaceFolder": "/workspaces/n8n-cli",
+  "remoteEnv": {
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+  }
+}
