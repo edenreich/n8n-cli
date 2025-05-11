@@ -4,22 +4,18 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2":{}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "golang.go",
-        "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "redhat.vscode-yaml",
         "task.vscode-task",
         "ms-azuretools.vscode-docker",
         "streetsidesoftware.code-spell-checker",
         "esbenp.prettier-vscode",
         "github.vscode-github-actions",
         "github.vscode-pull-request-github",
-        "yzhang.markdown-all-in-one",
-        "ipedrazas.kubernetes-snippets",
         "ms-vscode.go"
       ],
       "settings": {
