@@ -10,13 +10,11 @@
     "vscode": {
       "extensions": [
         "golang.go",
+        "ms-vscode.go",
         "task.vscode-task",
         "ms-azuretools.vscode-docker",
         "streetsidesoftware.code-spell-checker",
-        "esbenp.prettier-vscode",
-        "github.vscode-github-actions",
-        "github.vscode-pull-request-github",
-        "ms-vscode.go"
+        "esbenp.prettier-vscode"
       ],
       "settings": {
         "files.insertFinalNewline": true,
@@ -33,12 +31,11 @@
           "editor.defaultFormatter": "golang.go"
         },
         "editor.renderWhitespace": "all",
+        "chat.agent.enabled": true,
         "cSpell.enabled": true,
         "cSpell.files": ["**/*.md"],
         "git.enableCommitSigning": true,
         "dev.containers.copyGitConfig": true,
-        "githubPullRequests.experimental.chat": true,
-        "githubPullRequests.experimental.notificationsView": true,
         "mcp": {
           "servers": {
             "fetch": {
