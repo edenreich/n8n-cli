@@ -20,6 +20,18 @@
 
 <p align="center">Command line interface for managing n8n workflows.</p>
 
+## Table of Contents
+
+- [Installation](#installation)
+  - [Quick Install](#quick-install-linux-macos-windows-with-wsl)
+  - [Autocompletion](#autocompletion)
+  - [Manual Installation with Go](#manual-installation-with-go)
+- [Configuration](#configuration)
+- [Commands](#commands)
+  - [Sync](#sync)
+  - [Import](#import)
+- [Workflow File Structure](#workflow-file-structure)
+
 ## Installation
 
 ### Quick Install (Linux, macOS, Windows with WSL)
