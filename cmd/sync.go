@@ -31,7 +31,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joho/godotenv"
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/spf13/cobra"
 )
 
@@ -85,25 +85,14 @@ These can be set in a .env file or as environment variables.`, Run: func(cmd *co
 			directory = "hack/workflows"
 		}
 
-		err := loadEnv()
+		cfg, err := config.GetConfig()
 		if err != nil {
-			fmt.Println("Error loading environment variables:", err)
+			fmt.Println("Error loading configuration:", err)
 			return
 		}
-
-		apiToken := os.Getenv("N8N_API_KEY")
-		instanceURL := os.Getenv("N8N_INSTANCE_URL")
-
-		if apiToken == "" || instanceURL == "" {
-			fmt.Println("N8N_API_KEY and N8N_INSTANCE_URL environment variables must be set")
-			fmt.Println("You can create a .env file based on .env.example")
-			return
-		}
-
-		apiBaseURL := ensureAPIPrefix(instanceURL)
 
 		fmt.Println("Starting workflow synchronization...")
-		fmt.Printf("Using API URL: %s\n", apiBaseURL)
+		fmt.Printf("Using API URL: %s\n", cfg.APIBaseURL)
 		fmt.Printf("Workflow directory: %s\n", directory)
 
 		if dryRun {
@@ -114,16 +103,16 @@ These can be set in a .env file or as environment variables.`, Run: func(cmd *co
 			fmt.Println("All workflows will be activated after synchronization")
 		}
 
-		config := SyncConfig{
+		syncConfig := SyncConfig{
 			Directory:   directory,
-			APIBaseURL:  apiBaseURL,
-			APIToken:    apiToken,
+			APIBaseURL:  cfg.APIBaseURL,
+			APIToken:    cfg.APIToken,
 			ActivateAll: activateAll,
 			DryRun:      dryRun,
 			Verbose:     verbose,
 		}
 
-		err = syncWorkflows(config)
+		err = syncWorkflows(syncConfig)
 		if err != nil {
 			fmt.Println("Error syncing workflows:", err)
 			return
@@ -140,23 +129,6 @@ func init() {
 	syncCmd.Flags().BoolP("activate-all", "a", false, "Activate all workflows after synchronization")
 	syncCmd.Flags().BoolP("dry-run", "n", false, "Show what would be done without making changes")
 	syncCmd.Flags().BoolP("verbose", "v", false, "Show detailed output during synchronization")
-}
-
-// loadEnv loads environment variables from .env file
-func loadEnv() error {
-	_ = godotenv.Load()
-	return nil
-}
-
-// ensureAPIPrefix ensures the URL has the /api/v1 prefix
-func ensureAPIPrefix(url string) string {
-	url = strings.TrimSuffix(url, "/")
-
-	if !strings.HasSuffix(url, "/api/v1") {
-		return url + "/api/v1"
-	}
-
-	return url
 }
 
 // syncWorkflows walks through the directory and syncs each workflow file
@@ -545,13 +517,11 @@ func updateWorkflow(id string, data []byte, apiBaseURL, apiToken string) error {
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	// Immediately fetch the latest workflow data to get the updated versionId
 	latestWorkflow, err := fetchWorkflow(id, apiBaseURL, apiToken)
 	if err != nil {
 		return fmt.Errorf("failed to fetch updated workflow data: %v", err)
 	}
 
-	// Update the workflow with the latest data in memory
 	workflowData = latestWorkflow
 
 	return nil

@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/spf13/cobra"
 )
 
@@ -79,42 +80,32 @@ These can be set in a .env file or as environment variables.`,
 			all = true
 		}
 
-		err := loadEnv()
+		// Get the configuration (including API token and URL)
+		cfg, err := config.GetConfig()
 		if err != nil {
-			fmt.Println("Error loading environment variables:", err)
+			fmt.Println("Error loading configuration:", err)
 			return
 		}
-
-		apiToken := os.Getenv("N8N_API_KEY")
-		instanceURL := os.Getenv("N8N_INSTANCE_URL")
-
-		if apiToken == "" || instanceURL == "" {
-			fmt.Println("N8N_API_KEY and N8N_INSTANCE_URL environment variables must be set")
-			fmt.Println("You can create a .env file based on .env.example")
-			return
-		}
-
-		apiBaseURL := ensureAPIPrefix(instanceURL)
 
 		fmt.Println("Starting workflow import...")
-		fmt.Printf("Using API URL: %s\n", apiBaseURL)
+		fmt.Printf("Using API URL: %s\n", cfg.APIBaseURL)
 		fmt.Printf("Workflow directory: %s\n", directory)
 
 		if dryRun {
 			fmt.Println("DRY RUN MODE: No files will be created")
 		}
 
-		config := ImportConfig{
+		importConfig := ImportConfig{
 			Directory:  directory,
-			APIBaseURL: apiBaseURL,
-			APIToken:   apiToken,
+			APIBaseURL: cfg.APIBaseURL,
+			APIToken:   cfg.APIToken,
+			WorkflowID: workflowID,
+			All:        all,
 			DryRun:     dryRun,
 			Verbose:    verbose,
-			All:        all,
-			WorkflowID: workflowID,
 		}
 
-		err = importWorkflows(config)
+		err = importWorkflows(importConfig)
 		if err != nil {
 			fmt.Println("Error importing workflows:", err)
 			return
