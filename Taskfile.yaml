@@ -1,5 +1,17 @@
 version: "3"
 
+vars:
+  VERSION:
+    sh: git describe --tags --always --dirty | sed 's/^v//' || echo "dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD || echo "none"
+  BUILD_DATE:
+    sh: date -u '+%Y-%m-%d_%H:%M:%S' || echo "unknown"
+  LD_FLAGS: >-
+    -X github.com/edenreich/n8n-cli/cmd.Version={{.VERSION}}
+    -X github.com/edenreich/n8n-cli/cmd.BuildDate={{.BUILD_DATE}}
+    -X github.com/edenreich/n8n-cli/cmd.Commit={{.COMMIT}}
+
 tasks:
   oas-download:
     desc: "Download the OpenAPI Specification for n8n"
@@ -9,7 +21,18 @@ tasks:
   cli:
     desc: "Run the n8n CLI"
     cmds:
-      - go run ./main.go {{.CLI_ARGS}}
+      - go run -ldflags="{{.LD_FLAGS}}" ./main.go {{.CLI_ARGS}}
+
+  build:
+    desc: "Build the n8n CLI with version information"
+    cmds:
+      - go build -ldflags="{{.LD_FLAGS}}" -o n8n-cli main.go
+
+  install:
+    desc: "Install the n8n CLI"
+    deps: [build]
+    cmds:
+      - cp n8n-cli /usr/local/bin/ || sudo cp n8n-cli /usr/local/bin/
 
   lint:
     desc: "Run the linter"

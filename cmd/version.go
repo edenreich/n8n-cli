@@ -23,41 +23,29 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "n8n-cli",
-	Short: "Command line interface for managing n8n workflows",
-	Long: `n8n-cli is a command line tool for managing n8n automation workflows.
+// These variables will be set during the build
+var (
+	Version   = "dev"
+	BuildDate = "unknown"
+	Commit    = "none"
+)
 
-It allows you to synchronize JSON workflows between your local filesystem and n8n instances,
-import workflows from n8n instances to your local directory, and manage your workflows 
-through version control systems.`,
+// versionCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number of n8n-cli",
+	Long:  `All software has versions. This is n8n-cli's.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if versionFlag, _ := cmd.Flags().GetBool("version"); versionFlag {
-			fmt.Printf("n8n-cli %s\n", Version)
-			fmt.Printf("Build Date: %s\n", BuildDate)
-			fmt.Printf("Git Commit: %s\n", Commit)
-			return
-		}
-
-		cmd.Help()
+		fmt.Printf("n8n-cli %s\n", Version)
+		fmt.Printf("Build Date: %s\n", BuildDate)
+		fmt.Printf("Git Commit: %s\n", Commit)
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
-
 func init() {
-	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
+	rootCmd.AddCommand(versionCmd)
 }

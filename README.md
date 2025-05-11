@@ -73,6 +73,16 @@ You can generate an API key in the n8n UI under Settings > API.
 
 ## Commands
 
+### Version
+
+Display the version information of the n8n-cli:
+
+```bash
+n8n-cli -v
+# Or use the explicit command
+n8n-cli version
+```
+
 ### Sync
 
 Synchronize JSON workflows from a local directory to an n8n instance:
