@@ -88,6 +88,15 @@ Options:
 - `--dry-run, -n`: Show what would be done without making changes
 - `--verbose, -v`: Show detailed output during synchronization
 
+How the sync command handles workflow IDs:
+
+1. If a workflow file contains an ID:
+   - If that ID exists on the n8n instance, the workflow will be updated
+   - If that ID doesn't exist on the n8n instance, a new workflow will be created (n8n API doesn't allow specifying IDs when creating workflows)
+2. If a workflow file doesn't have an ID, a new workflow will be created with a server-generated ID
+
+This ensures that workflows maintain their IDs across different environments and prevents duplication.
+
 Example:
 
 ```bash

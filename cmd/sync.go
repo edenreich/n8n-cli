@@ -171,6 +171,23 @@ func syncWorkflows(config SyncConfig) error {
 		return nil
 	}
 
+	serverWorkflows, err := getServerWorkflows(config.APIBaseURL, config.APIToken)
+	if err != nil {
+		return fmt.Errorf("failed to fetch server workflows: %v", err)
+	}
+
+	workflowNameToID := make(map[string]string)
+	for _, workflow := range serverWorkflows {
+		name, _ := workflow["name"].(string)
+		id, _ := workflow["id"].(string)
+		if name != "" && id != "" {
+			workflowNameToID[name] = id
+			if config.Verbose {
+				fmt.Printf("Found server workflow: %s (ID: %s)\n", name, id)
+			}
+		}
+	}
+
 	return filepath.Walk(config.Directory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -197,6 +214,11 @@ func syncWorkflows(config SyncConfig) error {
 			fmt.Printf("Processing workflow: %s\n", workflowName)
 		}
 
+		serverID, existsOnServer := workflowNameToID[workflowName]
+		if existsOnServer && config.Verbose {
+			fmt.Printf("Found matching workflow on server with name: %s (ID: %s)\n", workflowName, serverID)
+		}
+
 		filteredWorkflow := map[string]interface{}{
 			"name":        workflow["name"],
 			"nodes":       workflow["nodes"],
@@ -214,14 +236,20 @@ func syncWorkflows(config SyncConfig) error {
 			shouldActivate = true
 		}
 
+		if existsOnServer && workflowID != serverID {
+			if config.Verbose {
+				fmt.Printf("Workflow with name '%s' exists on server with different ID: %s (local ID: %s)\n",
+					workflowName, serverID, workflowID)
+			}
+
+			workflowID = serverID
+		}
+
 		if workflowID != "" {
 			if config.DryRun {
 				fmt.Printf("[DRY RUN] Would check if workflow %s exists\n", workflowName)
-				exists := false
-				if !exists {
-					fmt.Printf("[DRY RUN] Would create workflow: %s\n", workflowName)
-					return nil
-				}
+				fmt.Printf("[DRY RUN] Would update workflow: %s\n", workflowName)
+				return nil
 			}
 
 			exists, err := checkWorkflowExists(workflowID, config.APIBaseURL, config.APIToken)
@@ -230,30 +258,141 @@ func syncWorkflows(config SyncConfig) error {
 			}
 
 			if exists {
-				if config.DryRun {
-					fmt.Printf("[DRY RUN] Would update workflow: %s\n", workflowName)
-				} else {
-					err := updateWorkflow(workflowID, workflowData, config.APIBaseURL, config.APIToken)
+				var workflowToUpdate map[string]interface{}
+				if err := json.Unmarshal(workflowData, &workflowToUpdate); err != nil {
+					return fmt.Errorf("failed to parse workflow data: %v", err)
+				}
+				workflowToUpdate["id"] = workflowID
+
+				updateData, err := json.Marshal(workflowToUpdate)
+				if err != nil {
+					return fmt.Errorf("failed to marshal workflow with ID: %v", err)
+				}
+
+				err = updateWorkflow(workflowID, updateData, config.APIBaseURL, config.APIToken)
+				if err != nil {
+					return fmt.Errorf("error updating workflow %s: %v", workflowName, err)
+				}
+				fmt.Printf("Updated workflow: %s\n", workflowName)
+
+				if shouldActivate {
+					if err := activateWorkflow(workflowID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
+						fmt.Printf("Warning: Failed to activate workflow %s: %v\n", workflowName, err)
+					} else {
+						fmt.Printf("Activated workflow: %s\n", workflowName)
+					}
+				}
+
+				return nil
+			} else {
+				serverID, nameMatchExists := workflowNameToID[workflowName]
+				if nameMatchExists {
+					fmt.Printf("Workflow with ID %s not found on server, but found workflow with name '%s' (server ID: %s)\n",
+						workflowID, workflowName, serverID)
+
+					var workflowToUpdate map[string]interface{}
+					if err := json.Unmarshal(workflowData, &workflowToUpdate); err != nil {
+						return fmt.Errorf("failed to parse workflow data: %v", err)
+					}
+					workflowToUpdate["id"] = serverID
+
+					updateData, err := json.Marshal(workflowToUpdate)
+					if err != nil {
+						return fmt.Errorf("failed to marshal workflow with ID: %v", err)
+					}
+
+					err = updateWorkflow(serverID, updateData, config.APIBaseURL, config.APIToken)
 					if err != nil {
 						return fmt.Errorf("error updating workflow %s: %v", workflowName, err)
 					}
-					fmt.Printf("Updated workflow: %s\n", workflowName)
+					fmt.Printf("Updated existing workflow by name: %s (server ID: %s)\n", workflowName, serverID)
+
+					if err := updateWorkflowFile(path, workflowID, serverID); err != nil {
+						fmt.Printf("Warning: Failed to update workflow file with server ID: %v\n", err)
+					} else {
+						fmt.Printf("Updated workflow file with server ID: %s\n", path)
+					}
 
 					if shouldActivate {
-						if err := activateWorkflow(workflowID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
+						if err := activateWorkflow(serverID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
 							fmt.Printf("Warning: Failed to activate workflow %s: %v\n", workflowName, err)
 						} else {
 							fmt.Printf("Activated workflow: %s\n", workflowName)
 						}
 					}
-				}
 
-				return nil
+					return nil
+				} else {
+					fmt.Printf("Workflow with ID %s not found on server, will create a new workflow\n", workflowID)
+
+					newID, err := createWorkflow(workflowData, config.APIBaseURL, config.APIToken)
+					if err != nil {
+						return fmt.Errorf("error creating workflow %s: %v", workflowName, err)
+					}
+					fmt.Printf("Created new workflow: %s with ID: %s (original ID was: %s)\n", workflowName, newID, workflowID)
+
+					if shouldActivate {
+						if err := activateWorkflow(newID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
+							fmt.Printf("Warning: Failed to activate workflow %s: %v\n", workflowName, err)
+						} else {
+							fmt.Printf("Activated workflow: %s\n", workflowName)
+						}
+					}
+
+					if err := updateWorkflowFile(path, workflowID, newID); err != nil {
+						fmt.Printf("Warning: Failed to update workflow file with new ID: %v\n", err)
+					} else {
+						fmt.Printf("Updated workflow file with new ID: %s\n", path)
+					}
+
+					return nil
+				}
 			}
 		}
 
+		serverID, existsOnServer = workflowNameToID[workflowName]
+		if existsOnServer {
+			if config.DryRun {
+				fmt.Printf("[DRY RUN] Would update existing workflow by name: %s (server ID: %s)\n", workflowName, serverID)
+				return nil
+			}
+
+			var workflowToUpdate map[string]interface{}
+			if err := json.Unmarshal(workflowData, &workflowToUpdate); err != nil {
+				return fmt.Errorf("failed to parse workflow data: %v", err)
+			}
+			workflowToUpdate["id"] = serverID
+
+			updateData, err := json.Marshal(workflowToUpdate)
+			if err != nil {
+				return fmt.Errorf("failed to marshal workflow with ID: %v", err)
+			}
+
+			err = updateWorkflow(serverID, updateData, config.APIBaseURL, config.APIToken)
+			if err != nil {
+				return fmt.Errorf("error updating workflow %s: %v", workflowName, err)
+			}
+			fmt.Printf("Updated existing workflow by name: %s (server ID: %s)\n", workflowName, serverID)
+
+			if err := updateWorkflowFile(path, "", serverID); err != nil {
+				fmt.Printf("Warning: Failed to update workflow file with server ID: %v\n", err)
+			} else {
+				fmt.Printf("Updated workflow file with server ID: %s\n", path)
+			}
+
+			if shouldActivate {
+				if err := activateWorkflow(serverID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
+					fmt.Printf("Warning: Failed to activate workflow %s: %v\n", workflowName, err)
+				} else {
+					fmt.Printf("Activated workflow: %s\n", workflowName)
+				}
+			}
+
+			return nil
+		}
+
 		if config.DryRun {
-			fmt.Printf("[DRY RUN] Would create workflow: %s\n", workflowName)
+			fmt.Printf("[DRY RUN] Would create new workflow: %s\n", workflowName)
 			return nil
 		}
 
@@ -262,7 +401,13 @@ func syncWorkflows(config SyncConfig) error {
 			return fmt.Errorf("error creating workflow %s: %v", workflowName, err)
 		}
 
-		fmt.Printf("Created workflow: %s with ID: %s\n", workflowName, newID)
+		fmt.Printf("Created new workflow: %s with ID: %s\n", workflowName, newID)
+
+		if err := updateWorkflowFile(path, "", newID); err != nil {
+			fmt.Printf("Warning: Failed to update workflow file with new ID: %v\n", err)
+		} else {
+			fmt.Printf("Updated workflow file with new ID: %s\n", path)
+		}
 
 		if shouldActivate {
 			if err := activateWorkflow(newID, shouldActivate, config.APIBaseURL, config.APIToken); err != nil {
@@ -305,7 +450,19 @@ func checkWorkflowExists(id, apiBaseURL, apiToken string) (bool, error) {
 func createWorkflow(data []byte, apiBaseURL, apiToken string) (string, error) {
 	url := fmt.Sprintf("%s/workflows", apiBaseURL)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	var workflow map[string]interface{}
+	if err := json.Unmarshal(data, &workflow); err != nil {
+		return "", fmt.Errorf("failed to parse workflow data: %v", err)
+	}
+
+	delete(workflow, "id")
+
+	dataWithoutID, err := json.Marshal(workflow)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal workflow without ID: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(dataWithoutID))
 	if err != nil {
 		return "", err
 	}
@@ -348,11 +505,23 @@ func createWorkflow(data []byte, apiBaseURL, apiToken string) (string, error) {
 	return id, nil
 }
 
-// updateWorkflow updates an existing workflow on the n8n instance
+// updateWorkflow updates an existing workflow on the n8n instance and returns the latest workflow data
 func updateWorkflow(id string, data []byte, apiBaseURL, apiToken string) error {
 	url := fmt.Sprintf("%s/workflows/%s", apiBaseURL, id)
 
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	var workflowData map[string]interface{}
+	if err := json.Unmarshal(data, &workflowData); err != nil {
+		return fmt.Errorf("failed to parse workflow data for update: %v", err)
+	}
+
+	delete(workflowData, "id")
+
+	dataWithoutID, err := json.Marshal(workflowData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal workflow data without ID: %v", err)
+	}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(dataWithoutID))
 	if err != nil {
 		return err
 	}
@@ -375,6 +544,15 @@ func updateWorkflow(id string, data []byte, apiBaseURL, apiToken string) error {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
 	}
+
+	// Immediately fetch the latest workflow data to get the updated versionId
+	latestWorkflow, err := fetchWorkflow(id, apiBaseURL, apiToken)
+	if err != nil {
+		return fmt.Errorf("failed to fetch updated workflow data: %v", err)
+	}
+
+	// Update the workflow with the latest data in memory
+	workflowData = latestWorkflow
 
 	return nil
 }
@@ -411,4 +589,70 @@ func activateWorkflow(id string, shouldActivate bool, apiBaseURL, apiToken strin
 	}
 
 	return nil
+}
+
+// updateWorkflowFile updates the workflow file with the new ID
+func updateWorkflowFile(path, oldID, newID string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read workflow file %s: %v", path, err)
+	}
+
+	var workflow map[string]interface{}
+	if err := json.Unmarshal(data, &workflow); err != nil {
+		return fmt.Errorf("failed to parse workflow JSON %s: %v", path, err)
+	}
+
+	workflow["id"] = newID
+
+	updatedData, err := json.MarshalIndent(workflow, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal workflow data: %v", err)
+	}
+
+	if err := os.WriteFile(path, updatedData, 0644); err != nil {
+		return fmt.Errorf("failed to write updated workflow to file %s: %v", path, err)
+	}
+
+	return nil
+}
+
+// fetchWorkflow gets the latest workflow data from the n8n instance
+func fetchWorkflow(id, apiBaseURL, apiToken string) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/workflows/%s", apiBaseURL, id)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", apiToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var workflow map[string]interface{}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(body, &workflow); err != nil {
+		return nil, fmt.Errorf("failed to parse workflow data: %v", err)
+	}
+
+	return workflow, nil
 }
