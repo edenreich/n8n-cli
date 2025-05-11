@@ -5,6 +5,13 @@ on:
   release:
     types:
       - published
+      - created
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -41,8 +48,13 @@ jobs:
           GOARCH: ${{ matrix.go-arch }}
         run: |
           APP_NAME=n8n-cli
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION=${{ github.event.inputs.version }}
+            VERSION=${VERSION#v}
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+          fi
           echo "Building ${APP_NAME} version ${VERSION} for linux_${{ matrix.arch }}"
           mkdir -p dist
           go build -v -o dist/${APP_NAME}_linux_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
@@ -73,7 +85,7 @@ jobs:
       - name: Upload Artifacts to Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ github.event.inputs.version || github.event.release.tag_name }}
         run: |
           find dist -type f -not -path "*/\.*" | while read file; do
             echo "Uploading $file to release $VERSION"
