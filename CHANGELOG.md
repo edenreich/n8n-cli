@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3](https://github.com/edenreich/n8n-cli/compare/v0.1.2...v0.1.3) (2025-05-11)
+
+### 🐛 Bug Fixes
+
+* Enhance sync command to manage workflow IDs and add server workflow fetching ([09a7f3b](https://github.com/edenreich/n8n-cli/commit/09a7f3bc95c15fd19924450637994d9aa38570f4))
+
 ## [0.1.2](https://github.com/edenreich/n8n-cli/compare/v0.1.1...v0.1.2) (2025-05-11)
 
 ### 📚 Documentation
