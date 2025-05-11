@@ -12,6 +12,18 @@ curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh
 
 This script will automatically detect your operating system and architecture and install the appropriate binary.
 
+### Autocompletion
+
+To enable auto completion for `bash`, `zsh`, or `fish`, run the following command:
+
+```bash
+source <(n8n-cli completion bash) # for bash
+source <(n8n-cli completion zsh)  # for zsh
+source <(n8n-cli completion fish) # for fish
+```
+
+If you need it permanently, add it to your shell's configuration file (e.g., `~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`).
+
 ### Manual Installation with Go
 
 ```bash
