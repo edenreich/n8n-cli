@@ -1,0 +1,6 @@
+version: "3"
+
+tasks:
+  oas-download:
+    cmds:
+      - curl -sSLf https://docs.n8n.io/api/v1/openapi.yml > openapi.yml
