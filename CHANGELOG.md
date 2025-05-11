@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2](https://github.com/edenreich/n8n-cli/compare/v0.1.1...v0.1.2) (2025-05-11)
+
+### 📚 Documentation
+
+* Add completion instructions for bash, zsh, and fish to README ([9003997](https://github.com/edenreich/n8n-cli/commit/90039970f6ed4f2cb26fea3fdffb707f2699239c))
+* Remove redundant installer details from README ([2b7238d](https://github.com/edenreich/n8n-cli/commit/2b7238d724949847da29f3885f296cb3b357ffb7))
+* Update README Table of Contents for better navigation ([b929d4e](https://github.com/edenreich/n8n-cli/commit/b929d4e6a9b6185c5c988733d8fdfbcf575c1a96))
+* Update README to enhance visual appeal with badges and improved header ([40c6175](https://github.com/edenreich/n8n-cli/commit/40c617501c60aed4b4d6a4df219a82385e2ce69e))
+
+### 🔧 Miscellaneous
+
+* Mark install.sh as vendored for linguist ([9752331](https://github.com/edenreich/n8n-cli/commit/9752331b0644db01ed1e94f9bf39b19c8d9aafea))
+
+### 📦 Miscellaneous
+
+* Optimize Go build flags for smaller binary size and ship it statically ([dae0c30](https://github.com/edenreich/n8n-cli/commit/dae0c30bb9dde6034f4573e24bfd726f89cc918c))
+
 ## [0.1.1](https://github.com/edenreich/n8n-cli/compare/v0.1.0...v0.1.1) (2025-05-11)
 
 ### 🐛 Bug Fixes
