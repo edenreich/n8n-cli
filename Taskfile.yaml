@@ -28,11 +28,10 @@ tasks:
     cmds:
       - go build -ldflags="{{.LD_FLAGS}}" -o n8n-cli main.go
 
-  install:
-    desc: "Install the n8n CLI"
-    deps: [build]
+  test:
+    desc: "Run the tests"
     cmds:
-      - cp n8n-cli /usr/local/bin/ || sudo cp n8n-cli /usr/local/bin/
+      - go test ./... -coverprofile=coverage.out
 
   lint:
     desc: "Run the linter"

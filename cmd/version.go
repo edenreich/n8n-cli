@@ -39,10 +39,11 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of n8n-cli",
 	Long:  `All software has versions. This is n8n-cli's.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("n8n-cli %s\n", Version)
-		fmt.Printf("Build Date: %s\n", BuildDate)
-		fmt.Printf("Git Commit: %s\n", Commit)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.Println(fmt.Sprintf("n8n-cli %s", Version))
+		cmd.Println(fmt.Sprintf("Build Date: %s", BuildDate))
+		cmd.Println(fmt.Sprintf("Git Commit: %s", Commit))
+		return nil
 	},
 }
 

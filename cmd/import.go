@@ -65,7 +65,7 @@ Environment variables required:
 - N8N_INSTANCE_URL: URL of your n8n instance (e.g., https://your-instance.n8n.cloud)
 
 These can be set in a .env file or as environment variables.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		directory, _ := cmd.Flags().GetString("directory")
 		workflowID, _ := cmd.Flags().GetString("workflow-id")
 		all, _ := cmd.Flags().GetBool("all")
@@ -83,16 +83,15 @@ These can be set in a .env file or as environment variables.`,
 		// Get the configuration (including API token and URL)
 		cfg, err := config.GetConfig()
 		if err != nil {
-			fmt.Println("Error loading configuration:", err)
-			return
+			return fmt.Errorf("error loading configuration: %w", err)
 		}
 
-		fmt.Println("Starting workflow import...")
-		fmt.Printf("Using API URL: %s\n", cfg.APIBaseURL)
-		fmt.Printf("Workflow directory: %s\n", directory)
+		cmd.Println("Starting workflow import...")
+		cmd.Printf("Using API URL: %s\n", cfg.APIBaseURL)
+		cmd.Printf("Workflow directory: %s\n", directory)
 
 		if dryRun {
-			fmt.Println("DRY RUN MODE: No files will be created")
+			cmd.Println("DRY RUN MODE: No files will be created")
 		}
 
 		importConfig := ImportConfig{
@@ -105,13 +104,12 @@ These can be set in a .env file or as environment variables.`,
 			Verbose:    verbose,
 		}
 
-		err = importWorkflows(importConfig)
-		if err != nil {
-			fmt.Println("Error importing workflows:", err)
-			return
+		if err = importWorkflows(importConfig); err != nil {
+			return fmt.Errorf("error importing workflows: %w", err)
 		}
 
-		fmt.Println("Workflow import completed successfully")
+		cmd.Println("Workflow import completed successfully")
+		return nil
 	},
 }
 
@@ -198,7 +196,6 @@ func importAllWorkflows(config ImportConfig) error {
 			fmt.Printf("Found workflow: %s\n", workflowName)
 		}
 
-		// Get the full workflow data with all details
 		err := importWorkflowByIDWithConfig(workflowID, config)
 		if err != nil {
 			fmt.Printf("Error importing workflow %s: %v\n", workflowID, err)
