@@ -10,3 +10,8 @@ tasks:
     desc: "Run the n8n CLI"
     cmds:
       - go run ./main.go {{.CLI_ARGS}}
+
+  lint:
+    desc: "Run the linter"
+    cmds:
+      - golangci-lint run
