@@ -23,13 +23,14 @@ RUN curl -fsSL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin ${TA
 RUN curl -fsSL https://github.com/cli/cli/releases/download/v${GITHUB_CLI_VERSION}/gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture).tar.gz | tar -xzv -C /usr/local/bin --strip-components=2 gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture)/bin/gh
 
 # Install semantic-release
-RUN npm install -g semantic-release@${SEMANTIC_RELEASE_VERSION} \
-    @semantic-release/changelog \
-    @semantic-release/git \
-    @semantic-release/github \
-    @semantic-release/exec \
-    conventional-changelog-cli \
-    conventional-changelog-conventionalcommits
+RUN npm install -g \
+    semantic-release@${SEMANTIC_RELEASE_VERSION} \
+    @semantic-release/changelog@6.0.3 \
+    @semantic-release/git@10.0.1 \
+    @semantic-release/github@11.0.2 \
+    @semantic-release/commit-analyzer@13.0.1 \
+    @semantic-release/release-notes-generator@14.0.3 \
+    conventional-changelog-conventionalcommits@8.0.0
 
 # Install powerlevel10k theme for zsh
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /home/vscode/.oh-my-zsh/custom/themes/powerlevel10k
