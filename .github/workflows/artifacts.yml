@@ -44,13 +44,20 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION#v}
           echo "Building ${APP_NAME} version ${VERSION} for linux_${{ matrix.arch }}"
+          mkdir -p dist
           go build -v -o dist/${APP_NAME}_linux_${{ matrix.arch }} -ldflags "-X main.Version=${VERSION}" .
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}_${{ matrix.arch }}_artifacts
+          path: dist/
 
   upload:
     name: Upload Artifacts
     runs-on: ubuntu-24.04
     needs:
-      - build_artifacts
+      - build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -58,17 +65,17 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
       - name: Upload Artifacts to Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.event.release.tag_name }}
         run: |
-          for file in dist/*; do
-            if [ -d "$file" ]; then
-              echo "Skipping directory: $file"
-              continue
-            fi
-
-            echo "Uploading $file to release ${{ env.VERSION }}"
-            gh release upload ${{ env.VERSION }} "$file" --clobber
+          find dist -type f -not -path "*/\.*" | while read file; do
+            echo "Uploading $file to release $VERSION"
+            gh release upload $VERSION "$file" --clobber
           done
