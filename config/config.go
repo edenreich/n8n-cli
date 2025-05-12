@@ -40,8 +40,11 @@ func LoadEnvFile() {
 	if err != nil {
 		return
 	}
-	defer envFile.Close()
-
+	defer func() {
+		if err := envFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Error closing .env file: %v\n", err)
+		}
+	}()
 	scanner := bufio.NewScanner(envFile)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())

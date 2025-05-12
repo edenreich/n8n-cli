@@ -77,7 +77,11 @@ func setupMockServer(options ...func(*mockServerOptions)) *httptest.Server {
 			handleCreateWorkflow(w, r, opts.workflows)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			fmt.Fprintf(w, `{"error": "Method not allowed"}`)
+			_, err := fmt.Fprintf(w, `{"error": "Method not allowed"}`)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
+			}
+
 		}
 	})
 
@@ -106,7 +110,10 @@ func setupMockServer(options ...func(*mockServerOptions)) *httptest.Server {
 			handleDeleteWorkflow(w, r, opts.workflows, workflowID)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			fmt.Fprintf(w, `{"error": "Method not allowed"}`)
+			_, err := fmt.Fprintf(w, `{"error": "Method not allowed"}`)
+			if err != nil {
+				fmt.Printf("Error writing response: %v\n", err)
+			}
 		}
 	})
 
@@ -118,7 +125,10 @@ func authenticateRequest(w http.ResponseWriter, r *http.Request, token string) b
 	authToken := r.Header.Get("X-N8N-API-KEY")
 	if authToken != token {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, `{"error": "Unauthorized"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Unauthorized"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return false
 	}
 	return true
@@ -149,14 +159,20 @@ func handleGetWorkflows(w http.ResponseWriter, r *http.Request, workflows map[st
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	err := json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 // handleGetWorkflow handles GET requests for a single workflow
 func handleGetWorkflow(w http.ResponseWriter, r *http.Request, workflows map[string]*n8n.Workflow, workflowID string) {
 	if workflowID == "nonexistent" {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -164,7 +180,10 @@ func handleGetWorkflow(w http.ResponseWriter, r *http.Request, workflows map[str
 	if exists {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(workflow)
+		err := json.NewEncoder(w).Encode(workflow)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -172,13 +191,19 @@ func handleGetWorkflow(w http.ResponseWriter, r *http.Request, workflows map[str
 		if wf.Name == workflowID {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(wf)
+			err := json.NewEncoder(w).Encode(wf)
+			if err != nil {
+				fmt.Printf("Error writing response: %v\n", err)
+			}
 			return
 		}
 	}
 
 	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+	_, err := fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 // handleUpdateWorkflow handles PUT requests to update existing workflows
@@ -186,14 +211,20 @@ func handleUpdateWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 	workflow, exists := workflows[workflowID]
 	if !exists {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
 	var updatedWorkflow n8n.Workflow
 	if err := json.NewDecoder(r.Body).Decode(&updatedWorkflow); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, `{"error": "Invalid workflow data"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Invalid workflow data"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -203,7 +234,10 @@ func handleUpdateWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(updatedWorkflow)
+	err := json.NewEncoder(w).Encode(updatedWorkflow)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 // handleWorkflowActivation handles activation/deactivation requests
@@ -211,7 +245,10 @@ func handleWorkflowActivation(w http.ResponseWriter, r *http.Request, workflows 
 	workflow, exists := workflows[workflowID]
 	if !exists {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -219,7 +256,10 @@ func handleWorkflowActivation(w http.ResponseWriter, r *http.Request, workflows 
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"success": true}`)
+	_, err := fmt.Fprintf(w, `{"success": true}`)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 // handleCreateWorkflow handles POST requests to create new workflows
@@ -227,7 +267,10 @@ func handleCreateWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 	var workflow n8n.Workflow
 	if err := json.NewDecoder(r.Body).Decode(&workflow); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, `{"error": "Invalid workflow data"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Invalid workflow data"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -245,7 +288,10 @@ func handleCreateWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(workflow)
+	err := json.NewEncoder(w).Encode(workflow)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 // handleDeleteWorkflow handles DELETE requests for a workflow
@@ -253,7 +299,10 @@ func handleDeleteWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 	_, exists := workflows[workflowID]
 	if !exists {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		_, err := fmt.Fprintf(w, `{"error": "Workflow not found"}`)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 		return
 	}
 
@@ -261,7 +310,10 @@ func handleDeleteWorkflow(w http.ResponseWriter, r *http.Request, workflows map[
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"success": true}`)
+	_, err := fmt.Fprintf(w, `{"success": true}`)
+	if err != nil {
+		fmt.Printf("Error writing response: %v\n", err)
+	}
 }
 
 func TestGetServerWorkflows(t *testing.T) {
@@ -285,13 +337,19 @@ func TestGetServerWorkflows(t *testing.T) {
 
 	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Internal server error"}`))
+		_, err := w.Write([]byte(`{"error": "Internal server error"}`))
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 	}))
 	defer serverError.Close()
 
 	serverInvalidJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{invalid json`))
+		_, err := w.Write([]byte(`{invalid json`))
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 	}))
 	defer serverInvalidJSON.Close()
 
@@ -483,7 +541,10 @@ func TestSetWorkflowActiveState(t *testing.T) {
 
 	serverWithError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Internal server error"}`))
+		_, err := w.Write([]byte(`{"error": "Internal server error"}`))
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 	}))
 	defer serverWithError.Close()
 
@@ -614,28 +675,28 @@ func TestActivateCommand(t *testing.T) {
 	})
 	defer server.Close()
 
-	// Save original environment
 	originalEnvVars := map[string]string{
 		"N8N_INSTANCE_URL": os.Getenv("N8N_INSTANCE_URL"),
 		"N8N_API_KEY":      os.Getenv("N8N_API_KEY"),
 	}
 
-	// Restore original environment after test
 	defer func() {
 		for k, v := range originalEnvVars {
 			if v != "" {
-				os.Setenv(k, v)
+				err := os.Setenv(k, v)
+				assert.NoError(t, err)
 			} else {
-				os.Unsetenv(k)
+				err := os.Unsetenv(k)
+				assert.NoError(t, err)
 			}
 		}
 	}()
 
-	// Set environment variables for the test
-	os.Setenv("N8N_INSTANCE_URL", server.URL)
-	os.Setenv("N8N_API_KEY", "test-token")
+	err := os.Setenv("N8N_INSTANCE_URL", server.URL)
+	assert.NoError(t, err)
+	err = os.Setenv("N8N_API_KEY", "test-token")
+	assert.NoError(t, err)
 
-	// Reset viper to pick up the new environment variables
 	viper.Reset()
 	initConfig()
 

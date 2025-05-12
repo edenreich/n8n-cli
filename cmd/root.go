@@ -68,8 +68,12 @@ func init() {
 	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
 	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
 
-	viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key"))
-	viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url"))
+	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding api-key flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set
@@ -84,8 +88,12 @@ func initConfig() {
 	viper.SetEnvPrefix("N8N")
 	viper.AutomaticEnv()
 
-	viper.BindEnv("api_key", "N8N_API_KEY")
-	viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
+	if err := viper.BindEnv("api_key", "N8N_API_KEY"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding environment variable: %v\n", err)
+	}
+	if err := viper.BindEnv("instance_url", "N8N_INSTANCE_URL"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding environment variable: %v\n", err)
+	}
 
 	viper.SetDefault("instance_url", "http://localhost:5678")
 	viper.SetDefault("api_key", "")
