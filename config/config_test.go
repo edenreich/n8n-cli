@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEnsureAPIPrefix(t *testing.T) {
@@ -47,14 +49,19 @@ func TestLoadConfig(t *testing.T) {
 	originalAPIKey := os.Getenv("N8N_API_KEY")
 	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 	defer func() {
-		os.Setenv("N8N_API_KEY", originalAPIKey)
-		os.Setenv("N8N_INSTANCE_URL", originalInstanceURL)
+		err := os.Setenv("N8N_API_KEY", originalAPIKey)
+		assert.NoError(t, err, "Failed to restore N8N_API_KEY")
+
+		err = os.Setenv("N8N_INSTANCE_URL", originalInstanceURL)
+		assert.NoError(t, err, "Failed to restore N8N_INSTANCE_URL")
 		globalConfig = nil
 	}()
 
 	t.Run("Both environment variables set", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "test-api-key")
-		os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		err := os.Setenv("N8N_API_KEY", "test-api-key")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
 		config, err := LoadConfig()
@@ -76,22 +83,26 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("Missing API key", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "")
-		os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		err := os.Setenv("N8N_API_KEY", "")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
-		_, err := LoadConfig()
+		_, err = LoadConfig()
 		if err == nil {
 			t.Error("LoadConfig() error = nil, want error")
 		}
 	})
 
 	t.Run("Missing instance URL", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "test-api-key")
-		os.Setenv("N8N_INSTANCE_URL", "")
+		err := os.Setenv("N8N_API_KEY", "test-api-key")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
-		_, err := LoadConfig()
+		_, err = LoadConfig()
 		if err == nil {
 			t.Error("LoadConfig() error = nil, want error")
 		}
@@ -102,14 +113,20 @@ func TestGetConfig(t *testing.T) {
 	originalAPIKey := os.Getenv("N8N_API_KEY")
 	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 	defer func() {
-		os.Setenv("N8N_API_KEY", originalAPIKey)
-		os.Setenv("N8N_INSTANCE_URL", originalInstanceURL)
+		if err := os.Setenv("N8N_API_KEY", originalAPIKey); err != nil {
+			t.Logf("Failed to restore N8N_API_KEY: %v", err)
+		}
+		if err := os.Setenv("N8N_INSTANCE_URL", originalInstanceURL); err != nil {
+			t.Logf("Failed to restore N8N_INSTANCE_URL: %v", err)
+		}
 		globalConfig = nil
 	}()
 
 	t.Run("Config already loaded", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "test-api-key")
-		os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		err := os.Setenv("N8N_API_KEY", "test-api-key")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
 		firstConfig, err := LoadConfig()
@@ -129,8 +146,10 @@ func TestGetConfig(t *testing.T) {
 
 	t.Run("Config not loaded yet", func(t *testing.T) {
 		globalConfig = nil
-		os.Setenv("N8N_API_KEY", "test-api-key")
-		os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		err := os.Setenv("N8N_API_KEY", "test-api-key")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 
 		config, err := GetConfig()
 		if err != nil {
@@ -149,17 +168,23 @@ func TestInitConfig(t *testing.T) {
 	originalAPIKey := os.Getenv("N8N_API_KEY")
 	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 	defer func() {
-		os.Setenv("N8N_API_KEY", originalAPIKey)
-		os.Setenv("N8N_INSTANCE_URL", originalInstanceURL)
+		if err := os.Setenv("N8N_API_KEY", originalAPIKey); err != nil {
+			t.Logf("Failed to restore N8N_API_KEY: %v", err)
+		}
+		if err := os.Setenv("N8N_INSTANCE_URL", originalInstanceURL); err != nil {
+			t.Logf("Failed to restore N8N_INSTANCE_URL: %v", err)
+		}
 		globalConfig = nil
 	}()
 
 	t.Run("Success initialization", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "test-api-key")
-		os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		err := os.Setenv("N8N_API_KEY", "test-api-key")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
-		err := InitConfig()
+		err = InitConfig()
 		if err != nil {
 			t.Fatalf("InitConfig() error = %v, want nil", err)
 		}
@@ -170,11 +195,13 @@ func TestInitConfig(t *testing.T) {
 	})
 
 	t.Run("Error initialization", func(t *testing.T) {
-		os.Setenv("N8N_API_KEY", "")
-		os.Setenv("N8N_INSTANCE_URL", "")
+		err := os.Setenv("N8N_API_KEY", "")
+		assert.NoError(t, err, "Failed to set N8N_API_KEY")
+		err = os.Setenv("N8N_INSTANCE_URL", "")
+		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
 		globalConfig = nil
 
-		err := InitConfig()
+		err = InitConfig()
 		if err == nil {
 			t.Error("InitConfig() error = nil, want error")
 		}
