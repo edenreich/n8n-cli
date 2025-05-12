@@ -65,12 +65,17 @@ func TestGetConfig(t *testing.T) {
 func TestConfigFromEnvVars(t *testing.T) {
 	origAPIKey := os.Getenv("N8N_API_KEY")
 	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
+
 	defer func() {
 		err := os.Setenv("N8N_API_KEY", origAPIKey)
 		assert.NoError(t, err)
 		err = os.Setenv("N8N_INSTANCE_URL", origInstanceURL)
 		assert.NoError(t, err)
+
+		viper.Reset()
 	}()
+
+	viper.Reset()
 
 	err := os.Setenv("N8N_API_KEY", "env-test-api-key")
 	assert.NoError(t, err)
@@ -84,8 +89,12 @@ func TestConfigFromEnvVars(t *testing.T) {
 	err = viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
 	assert.NoError(t, err)
 
+	viper.SetDefault("instance_url", "http://localhost:5678")
+	viper.SetDefault("api_key", "")
+
 	cfg, err := GetConfig()
 	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
 	assert.Equal(t, "env-test-api-key", cfg.APIToken)
 	assert.Equal(t, "http://env-test-url:5678/api/v1", cfg.APIBaseURL)
 }

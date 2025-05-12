@@ -625,27 +625,71 @@ func TestSetWorkflowActiveState(t *testing.T) {
 }
 
 func TestListCommand(t *testing.T) {
-	server := setupMockServer()
-	defer server.Close()
-
 	tests := []struct {
 		name           string
+		serverHandler  http.HandlerFunc
 		expectedOut    string
 		expectedErr    bool
 		expectedErrMsg string
 	}{
 		{
-			name:        "List workflows successfully",
-			expectedOut: "ID   NAME        ACTIVE  \n123  Workflow 1  true    \n456  Workflow 2  false   \n",
+			name: "List workflows successfully",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				workflows := []n8n.Workflow{
+					{
+						Id:     strPtr("123"),
+						Name:   "Test Workflow",
+						Active: boolPtr(false),
+					},
+					{
+						Id:     strPtr("456"),
+						Name:   "Another Workflow",
+						Active: boolPtr(true),
+					},
+				}
+				resp := struct {
+					Data []n8n.Workflow `json:"data"`
+				}{
+					Data: workflows,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				err := json.NewEncoder(w).Encode(resp)
+				if err != nil {
+					fmt.Printf("Error writing response: %v\n", err)
+				}
+			},
+			expectedOut: "ID   NAME              ACTIVE  \n123  Test Workflow     false   \n456  Another Workflow  true    \n",
 			expectedErr: false,
 		},
 		{
-			name:           "Error fetching workflows",
+			name: "Error fetching workflows",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, err := w.Write([]byte(`{"error": "Internal server error"}`))
+				if err != nil {
+					fmt.Printf("Error writing response: %v\n", err)
+				}
+			},
+			expectedOut:    "",
 			expectedErr:    true,
 			expectedErrMsg: "failed to get workflows",
 		},
 		{
-			name:        "Empty workflow list",
+			name: "Empty workflow list",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				resp := struct {
+					Data []n8n.Workflow `json:"data"`
+				}{
+					Data: []n8n.Workflow{},
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				err := json.NewEncoder(w).Encode(resp)
+				if err != nil {
+					fmt.Printf("Error writing response: %v\n", err)
+				}
+			},
 			expectedOut: "ID  NAME  ACTIVE  \n",
 			expectedErr: false,
 		},
@@ -653,10 +697,17 @@ func TestListCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(tt.serverHandler)
+			defer server.Close()
+			err := os.Setenv("N8N_API_KEY", "env-api-key")
+			assert.NoError(t, err)
+			err = os.Setenv("N8N_INSTANCE_URL", server.URL)
+			assert.NoError(t, err)
 			buf := new(bytes.Buffer)
-			listCmd.SetOut(buf)
-			listCmd.SetErr(buf)
-			err := listCmd.Execute()
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(buf)
+			rootCmd.SetArgs([]string{"workflows", "list"})
+			err = rootCmd.Execute()
 
 			if tt.expectedErr {
 				assert.Error(t, err)
@@ -724,10 +775,10 @@ func TestActivateCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			activateCmd.SetOut(buf)
-			activateCmd.SetErr(buf)
-			activateCmd.SetArgs(tt.args)
-			err := activateCmd.Execute()
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(buf)
+			rootCmd.SetArgs(append([]string{"workflows", "activate"}, tt.args...))
+			err := rootCmd.Execute()
 
 			if tt.expectedErr {
 				assert.Error(t, err)
@@ -767,13 +818,21 @@ func TestDeactivateCommand(t *testing.T) {
 		},
 	}
 
+	err := os.Setenv("N8N_INSTANCE_URL", server.URL)
+	assert.NoError(t, err)
+	err = os.Setenv("N8N_API_KEY", "test-token")
+	assert.NoError(t, err)
+
+	viper.Reset()
+	initConfig()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			deactivateCmd.SetOut(buf)
-			deactivateCmd.SetErr(buf)
-			deactivateCmd.SetArgs(tt.args)
-			err := deactivateCmd.Execute()
+			rootCmd.SetOut(buf)
+			rootCmd.SetErr(buf)
+			rootCmd.SetArgs(append([]string{"workflows", "deactivate"}, tt.args...))
+			err := rootCmd.Execute()
 
 			if tt.expectedErr {
 				assert.Error(t, err)

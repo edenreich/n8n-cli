@@ -130,40 +130,36 @@ When a workflow is deactivated, it will not run automatically even if it has tri
 	},
 }
 
-func setWorkflowActiveState(workflowIdentifier string, active bool, apiBaseURL, apiToken string) error {
-	workflow, err := findWorkflow(workflowIdentifier, apiBaseURL, apiToken)
+// setWorkflowActiveState activates or deactivates a workflow by ID
+func setWorkflowActiveState(workflowID string, active bool, apiBaseURL string, apiToken string) error {
+	workflow, err := findWorkflow(workflowID, apiBaseURL, apiToken)
 	if err != nil {
 		return err
 	}
 
-	var endpoint string
-	if active {
-		endpoint = "activate"
-	} else {
+	endpoint := "activate"
+	if !active {
 		endpoint = "deactivate"
 	}
 
 	url := fmt.Sprintf("%s/workflows/%s/%s", apiBaseURL, *workflow.Id, endpoint)
 
-	req, err := http.NewRequest("POST", url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %v", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-N8N-API-KEY", apiToken)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to execute request: %v", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API request failed with status %d", resp.StatusCode)
 	}
 
 	return nil
