@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 
 vars:
   VERSION:
@@ -14,36 +14,36 @@ vars:
 
 tasks:
   oas-download:
-    desc: "Download the OpenAPI Specification for n8n"
+    desc: 'Download the OpenAPI Specification for n8n'
     cmds:
       - curl -sSLf https://docs.n8n.io/api/v1/openapi.yml > openapi.yml
 
   oas-lint:
-    desc: "Lint OpenAPI spec"
+    desc: 'Lint OpenAPI spec'
     cmds:
       - spectral lint --verbose openapi.yml
 
   generate:
     desc: Generate Go types from OpenAPI specification
     cmds:
-      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest --package=types --generate types -o n8n/n8n.go openapi.yml
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest --package=n8n --generate types -o n8n/n8n.go openapi.yml
 
   cli:
-    desc: "Run the n8n CLI"
+    desc: 'Run the n8n CLI'
     cmds:
       - go run -ldflags="{{.LD_FLAGS}}" ./main.go {{.CLI_ARGS}}
 
   build:
-    desc: "Build the n8n CLI with version information"
+    desc: 'Build the n8n CLI with version information'
     cmds:
       - go build -ldflags="{{.LD_FLAGS}}" -o n8n-cli main.go
 
   test:
-    desc: "Run the tests"
+    desc: 'Run the tests'
     cmds:
       - go test ./... -coverprofile=coverage.out
 
   lint:
-    desc: "Run the linter"
+    desc: 'Run the linter'
     cmds:
       - golangci-lint run
