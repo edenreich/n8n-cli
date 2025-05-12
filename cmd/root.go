@@ -37,28 +37,32 @@ var rootCmd = &cobra.Command{
 It allows you to synchronize JSON workflows between your local filesystem and n8n instances,
 import workflows from n8n instances to your local directory, and manage your workflows 
 through version control systems.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if versionFlag, _ := cmd.Flags().GetBool("version"); versionFlag {
-			fmt.Printf("n8n-cli %s\n", Version)
-			fmt.Printf("Build Date: %s\n", BuildDate)
-			fmt.Printf("Git Commit: %s\n", Commit)
-			return
+			cmd.Println(fmt.Sprintf("n8n-cli %s", Version))
+			cmd.Println(fmt.Sprintf("Build Date: %s", BuildDate))
+			cmd.Println(fmt.Sprintf("Git Commit: %s", Commit))
+			return nil
 		}
 
-		if err := cmd.Help(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		// Print help to stdout so it can be captured in tests
+		cmd.SetOut(cmd.OutOrStdout())
+		return cmd.Help()
 	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+// GetRootCmd returns the root command for testing purposes
+func GetRootCmd() *cobra.Command {
+	return rootCmd
 }
 
 func init() {

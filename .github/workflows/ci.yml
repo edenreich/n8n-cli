@@ -18,13 +18,27 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5.5.0
         with:
-          go-version: "1.24"
+          go-version: '1.24'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 'lts/*'
 
       - name: Install GolangCI Lint
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.5
 
+      - name: Install Spectral
+        run: npm install -g @stoplight/spectral-cli
+
       - name: Lint
         run: golangci-lint run
 
+      - name: Lint OpenAPI Specification
+        run: spectral lint --verbose openapi.yml
+
       - name: Build
         run: go build -v ./...
+
+      - name: Test
+        run: go test ./... -coverprofile=coverage.out

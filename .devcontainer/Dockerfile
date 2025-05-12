@@ -32,6 +32,9 @@ RUN npm install -g \
     @semantic-release/release-notes-generator@14.0.3 \
     conventional-changelog-conventionalcommits@8.0.0
 
+# Install spectral
+RUN npm install -g @stoplight/spectral-cli
+
 # Install powerlevel10k theme for zsh
 RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /home/vscode/.oh-my-zsh/custom/themes/powerlevel10k
 RUN echo 'source /home/vscode/.oh-my-zsh/custom/themes/powerlevel10k/powerlevel10k.zsh-theme' >> /home/vscode/.zshrc

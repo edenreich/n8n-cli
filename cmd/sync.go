@@ -75,7 +75,8 @@ Environment variables required:
 - N8N_API_KEY: Your n8n API key
 - N8N_INSTANCE_URL: URL of your n8n instance (e.g., https://your-instance.n8n.cloud)
 
-These can be set in a .env file or as environment variables.`, Run: func(cmd *cobra.Command, args []string) {
+These can be set in a .env file or as environment variables.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		directory, _ := cmd.Flags().GetString("directory")
 		activateAll, _ := cmd.Flags().GetBool("activate-all")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -87,20 +88,19 @@ These can be set in a .env file or as environment variables.`, Run: func(cmd *co
 
 		cfg, err := config.GetConfig()
 		if err != nil {
-			fmt.Println("Error loading configuration:", err)
-			return
+			return fmt.Errorf("error loading configuration: %w", err)
 		}
 
-		fmt.Println("Starting workflow synchronization...")
-		fmt.Printf("Using API URL: %s\n", cfg.APIBaseURL)
-		fmt.Printf("Workflow directory: %s\n", directory)
+		cmd.Println("Starting workflow synchronization...")
+		cmd.Printf("Using API URL: %s\n", cfg.APIBaseURL)
+		cmd.Printf("Workflow directory: %s\n", directory)
 
 		if dryRun {
-			fmt.Println("DRY RUN MODE: No changes will be made to the n8n instance")
+			cmd.Println("DRY RUN MODE: No changes will be made to the n8n instance")
 		}
 
 		if activateAll {
-			fmt.Println("All workflows will be activated after synchronization")
+			cmd.Println("All workflows will be activated after synchronization")
 		}
 
 		syncConfig := SyncConfig{
@@ -112,13 +112,12 @@ These can be set in a .env file or as environment variables.`, Run: func(cmd *co
 			Verbose:     verbose,
 		}
 
-		err = syncWorkflows(syncConfig)
-		if err != nil {
-			fmt.Println("Error syncing workflows:", err)
-			return
+		if err = syncWorkflows(syncConfig); err != nil {
+			return fmt.Errorf("error syncing workflows: %w", err)
 		}
 
-		fmt.Println("Workflow synchronization completed successfully")
+		cmd.Println("Workflow synchronization completed successfully")
+		return nil
 	},
 }
 

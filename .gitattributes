@@ -1,2 +1,4 @@
 .devcontainer/** linguist-vendored=true
 install.sh linguist-vendored=true
+
+n8n/generated_types.go linguist-generated=true

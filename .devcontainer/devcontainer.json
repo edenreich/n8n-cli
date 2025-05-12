@@ -14,10 +14,12 @@
         "task.vscode-task",
         "ms-azuretools.vscode-docker",
         "streetsidesoftware.code-spell-checker",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "42crunch.vscode-openapi"
       ],
       "settings": {
         "files.insertFinalNewline": true,
+        "prettier.singleQuote": true,
         "go.lintTool": "golangci-lint",
         "go.lintFlags": ["--fast"],
         "terminal.integrated.defaultProfile.linux": "zsh",
