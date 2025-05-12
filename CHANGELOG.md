@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4](https://github.com/edenreich/n8n-cli/compare/v0.1.3...v0.1.4) (2025-05-12)
+
+### ♻️ Improvements
+
+* Refactor configuration make it shared between commands ([d529c9f](https://github.com/edenreich/n8n-cli/commit/d529c9f01af0cfc247f5a05a915a30dd7a790c72))
+* Remove redundant comment in LoadConfig function ([ff30fd0](https://github.com/edenreich/n8n-cli/commit/ff30fd042d19c3461030889de5396a20be704cd2))
+
+### 🐛 Bug Fixes
+
+* Improve error handling in command help execution ([83f5efd](https://github.com/edenreich/n8n-cli/commit/83f5efd7a90eb11f7dff04fb2e303d749b5a9677))
+
+### 🔧 Miscellaneous
+
+* Add initial documentation for project instructions, structure, tools, and development workflow for more efficient claude development ([22666e5](https://github.com/edenreich/n8n-cli/commit/22666e50424db104cff0732b57a92752c2120ef7))
+* Add version command to display n8n-cli version information ([a3b6b5a](https://github.com/edenreich/n8n-cli/commit/a3b6b5af6147297e9536dff63ddd48d4386a6729))
+
+### ✅ Miscellaneous
+
+* Add tests ([#4](https://github.com/edenreich/n8n-cli/issues/4)) ([e22b523](https://github.com/edenreich/n8n-cli/commit/e22b5230f6b79c5da0b147a812a119bb9d6dc652))
+
 ## [0.1.3](https://github.com/edenreich/n8n-cli/compare/v0.1.2...v0.1.3) (2025-05-11)
 
 ### 🐛 Bug Fixes
