@@ -26,7 +26,7 @@ tasks:
   generate:
     desc: Generate Go types from OpenAPI specification
     cmds:
-      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest --package=n8n --generate types -o n8n/n8n.go openapi.yml
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest --package=n8n --generate types -o n8n/generated_types.go openapi.yml
 
   cli:
     desc: 'Run the n8n CLI'
