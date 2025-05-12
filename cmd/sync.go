@@ -91,16 +91,16 @@ These can be set in a .env file or as environment variables.`,
 			return fmt.Errorf("error loading configuration: %w", err)
 		}
 
-		fmt.Println("Starting workflow synchronization...")
-		fmt.Printf("Using API URL: %s\n", cfg.APIBaseURL)
-		fmt.Printf("Workflow directory: %s\n", directory)
+		cmd.Println("Starting workflow synchronization...")
+		cmd.Printf("Using API URL: %s\n", cfg.APIBaseURL)
+		cmd.Printf("Workflow directory: %s\n", directory)
 
 		if dryRun {
-			fmt.Println("DRY RUN MODE: No changes will be made to the n8n instance")
+			cmd.Println("DRY RUN MODE: No changes will be made to the n8n instance")
 		}
 
 		if activateAll {
-			fmt.Println("All workflows will be activated after synchronization")
+			cmd.Println("All workflows will be activated after synchronization")
 		}
 
 		syncConfig := SyncConfig{
@@ -116,7 +116,7 @@ These can be set in a .env file or as environment variables.`,
 			return fmt.Errorf("error syncing workflows: %w", err)
 		}
 
-		fmt.Println("Workflow synchronization completed successfully")
+		cmd.Println("Workflow synchronization completed successfully")
 		return nil
 	},
 }
