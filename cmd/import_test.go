@@ -9,8 +9,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestImportCommand(t *testing.T) {
@@ -49,17 +50,14 @@ func TestImportCommand(t *testing.T) {
 
 			stdout, stderr, err := executeCommand(cmd, tc.args...)
 
-			if tc.expectError && err == nil {
-				t.Errorf("Expected error but got none")
-			}
-			if !tc.expectError && err != nil {
-				t.Errorf("Did not expect error but got: %v", err)
+			if tc.expectError {
+				assert.Error(t, err, "Expected an error but got none")
+			} else {
+				assert.NoError(t, err, "Did not expect error but got one")
 			}
 
 			output := stdout + stderr
-			if !strings.Contains(output, tc.expectedOut) {
-				t.Errorf("Expected output to contain '%s', got:\n%s", tc.expectedOut, output)
-			}
+			assert.Contains(t, output, tc.expectedOut, "Expected output to contain specific text")
 		})
 	}
 }
@@ -69,14 +67,14 @@ func TestImportWithMockAPI(t *testing.T) {
 		apiKey := r.Header.Get("X-N8N-API-KEY")
 		if apiKey != "test-api-key" {
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintln(w, `{"error": "Unauthorized"}`)
+			_, _ = fmt.Fprintln(w, `{"error": "Unauthorized"}`)
 			return
 		}
 
 		switch r.URL.Path {
 		case "/api/v1/workflows":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{
+			_, _ = fmt.Fprint(w, `{
 				"data": [
 					{
 						"id": "123",
@@ -93,7 +91,7 @@ func TestImportWithMockAPI(t *testing.T) {
 
 		case "/api/v1/workflows/123":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{
+			_, _ = fmt.Fprint(w, `{
 				"data": {
 					"id": "123",
 					"name": "Test Workflow 1",
@@ -105,7 +103,7 @@ func TestImportWithMockAPI(t *testing.T) {
 
 		case "/api/v1/workflows/456":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{
+			_, _ = fmt.Fprint(w, `{
 				"data": {
 					"id": "456",
 					"name": "Test Workflow 2",
@@ -117,7 +115,7 @@ func TestImportWithMockAPI(t *testing.T) {
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, `{"error": "Not found"}`)
+			_, _ = fmt.Fprint(w, `{"error": "Not found"}`)
 		}
 	}))
 	defer mockServer.Close()
@@ -126,7 +124,11 @@ func TestImportWithMockAPI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to clean up temp directory: %v", err)
+		}
+	}()
 
 	t.Run("Import specific workflow", func(t *testing.T) {
 		config := ImportConfig{
@@ -140,34 +142,24 @@ func TestImportWithMockAPI(t *testing.T) {
 		}
 
 		err := importWorkflows(config)
-		if err != nil {
-			t.Errorf("Failed to import workflow: %v", err)
-		}
+		assert.NoError(t, err, "Failed to import workflow")
 
 		filePath := filepath.Join(tempDir, "Test_Workflow_1.json")
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			t.Errorf("Expected workflow file %s was not created", filePath)
-		}
+		_, err = os.Stat(filePath)
+		assert.False(t, os.IsNotExist(err), "Expected workflow file %s was not created", filePath)
 
 		content, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Errorf("Failed to read workflow file: %v", err)
-		}
+		assert.NoError(t, err, "Failed to read workflow file")
 
 		var workflow map[string]interface{}
-		if err := json.Unmarshal(content, &workflow); err != nil {
-			t.Errorf("Workflow file does not contain valid JSON: %v", err)
-		}
+		err = json.Unmarshal(content, &workflow)
+		assert.NoError(t, err, "Workflow file does not contain valid JSON")
 
 		id, ok := workflow["id"].(string)
-		if !ok || id != "123" {
-			t.Errorf("Workflow has incorrect ID: %v", workflow["id"])
-		}
+		assert.True(t, ok && id == "123", "Workflow has incorrect ID: %v", workflow["id"])
 
 		name, ok := workflow["name"].(string)
-		if !ok || name != "Test Workflow 1" {
-			t.Errorf("Workflow has incorrect name: %v", workflow["name"])
-		}
+		assert.True(t, ok && name == "Test Workflow 1", "Workflow has incorrect name: %v", workflow["name"])
 	})
 
 	t.Run("Import all workflows", func(t *testing.T) {
@@ -220,8 +212,8 @@ func TestImportWithMockAPI(t *testing.T) {
 			Verbose:    true,
 		}
 
-		os.RemoveAll(tempDir)
-		os.MkdirAll(tempDir, 0755)
+		_ = os.RemoveAll(tempDir)
+		_ = os.MkdirAll(tempDir, 0755)
 
 		err := importWorkflows(config)
 		if err != nil {
@@ -244,7 +236,11 @@ func TestImportWorkflowErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Logf("Failed to remove temp directory: %v", err)
+			}
+		}()
 
 		config := ImportConfig{
 			Directory:  tempDir,
@@ -267,11 +263,15 @@ func TestImportWorkflowErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Logf("Failed to clean up temp directory: %v", err)
+			}
+		}()
 
 		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, `{"error": "Server error"}`)
+			_, _ = fmt.Fprint(w, `{"error": "Server error"}`)
 		}))
 		defer mockServer.Close()
 
@@ -286,9 +286,7 @@ func TestImportWorkflowErrors(t *testing.T) {
 		}
 
 		err = importWorkflows(config)
-		if err == nil {
-			t.Errorf("Expected error with server error but got none")
-		}
+		assert.Error(t, err, "Expected error with server error but got none")
 	})
 
 	t.Run("Invalid JSON Response", func(t *testing.T) {
@@ -296,11 +294,15 @@ func TestImportWorkflowErrors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create temp directory: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Logf("Failed to clean up temp directory: %v", err)
+			}
+		}()
 
 		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{invalid json}`)
+			_, _ = fmt.Fprint(w, `{invalid json}`)
 		}))
 		defer mockServer.Close()
 
@@ -315,9 +317,7 @@ func TestImportWorkflowErrors(t *testing.T) {
 		}
 
 		err = importWorkflows(config)
-		if err == nil {
-			t.Errorf("Expected error with invalid JSON but got none")
-		}
+		assert.Error(t, err, "Expected error with invalid JSON but got none")
 	})
 }
 
@@ -348,22 +348,16 @@ func TestSanitizeFilename(t *testing.T) {
 	}
 }
 
-// Mock HTTP client for testing API interactions
-type mockHTTPClient struct {
-	response *http.Response
-	err      error
-}
-
-func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	return m.response, m.err
-}
-
 func TestImportWorkflowByIDWithConfig(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "n8n-cli-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Logf("Failed to clean up temp directory: %v", err)
+		}
+	}()
 
 	responseBody := `{
 		"data": {
@@ -398,7 +392,7 @@ func TestImportWorkflowByIDWithConfig(t *testing.T) {
 
 		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, responseBody)
+			_, _ = fmt.Fprint(w, responseBody)
 		}))
 		defer mockServer.Close()
 
@@ -416,11 +410,4 @@ func TestImportWorkflowByIDWithConfig(t *testing.T) {
 	})
 
 	http.DefaultClient = oldClient
-}
-
-// Helper type for mocking HTTP transport
-type roundTripFunc func(req *http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
 }
