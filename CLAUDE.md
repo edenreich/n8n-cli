@@ -23,9 +23,10 @@ You have the following tools available for development:
 
 1. Start by writing unit tests for your new features or commands (Using Test-driven development).
 2. Always review `Taskfile.yaml` for available development tasks.
-3. Use `task cli -- <args>` to run the CLI during development.
-4. Always run `task lint` to verify and fix code errors before proceeding with the build.
-5. Use `task build` to build the CLI with proper version information.
-6. Use Cobra-CLI to generate new commands: `cobra-cli add <command-name>`
-7. Always fetch the latest documentation using context7 and fall back to fetch.
-8. When adding new commands, make sure to properly handle flags and implement the Run function.
+3. Always use existing types from n8n for consistency.
+4. Use `task cli -- <args>` to run the CLI during development.
+5. Always run `task lint` to verify and fix code errors before proceeding with the build.
+6. Use `task build` to build the CLI with proper version information.
+7. Use Cobra-CLI to generate new commands: `cobra-cli add <command-name>`
+8. Always fetch the latest documentation using context7 and fall back to fetch.
+9. When adding new commands, make sure to properly handle flags and implement the Run function.
