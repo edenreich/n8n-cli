@@ -1,94 +1,73 @@
-/*
-Copyright © 2025 Eden Reich
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
+// Package config provides configuration functionality for the n8n-cli application
 package config
 
 import (
-	"errors"
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
-// Config holds the global configuration for the n8n CLI
+// Config holds the application configuration
 type Config struct {
-	APIToken    string
-	InstanceURL string
-	APIBaseURL  string
+	APIToken   string
+	APIBaseURL string
 }
 
-// globalConfig holds the application configuration once loaded
-var globalConfig *Config
-
-// LoadConfig loads the configuration from environment variables
-func LoadConfig() (*Config, error) {
-	_ = godotenv.Load()
-
-	apiToken := os.Getenv("N8N_API_KEY")
-	instanceURL := os.Getenv("N8N_INSTANCE_URL")
-
-	if apiToken == "" || instanceURL == "" {
-		return nil, errors.New("N8N_API_KEY and N8N_INSTANCE_URL environment variables must be set")
-	}
-
-	apiBaseURL := ensureAPIPrefix(instanceURL)
-
-	config := &Config{
-		APIToken:    apiToken,
-		InstanceURL: instanceURL,
-		APIBaseURL:  apiBaseURL,
-	}
-
-	globalConfig = config
-	return config, nil
-}
-
-// GetConfig returns the global configuration or loads it if not already loaded
+// GetConfig returns the application configuration using Viper
 func GetConfig() (*Config, error) {
-	if globalConfig != nil {
-		return globalConfig, nil
+	apiToken := viper.GetString("api_key")
+	if apiToken == "" {
+		return nil, fmt.Errorf("N8N API key is not set. Use --api-key flag or set N8N_API_KEY environment variable")
 	}
 
-	return LoadConfig()
-}
-
-// ensureAPIPrefix ensures the URL has the /api/v1 prefix
-func ensureAPIPrefix(url string) string {
-	url = strings.TrimSuffix(url, "/")
-
-	if !strings.HasSuffix(url, "/api/v1") {
-		return url + "/api/v1"
+	instanceURL := viper.GetString("instance_url")
+	if instanceURL == "" {
+		return nil, fmt.Errorf("N8N instance URL is not set. Use --url flag or set N8N_INSTANCE_URL environment variable")
 	}
 
-	return url
+	return &Config{
+		APIToken:   apiToken,
+		APIBaseURL: strings.TrimSuffix(instanceURL, "/") + "/api/v1",
+	}, nil
 }
 
-// InitConfig initializes the configuration during startup
-func InitConfig() error {
-	_, err := LoadConfig()
+// LoadEnvFile loads environment variables from a .env file if it exists
+func LoadEnvFile() {
+	envFile, err := os.Open(".env")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, "You can create a .env file based on .env.example")
+		return
 	}
-	return err
+	defer envFile.Close()
+
+	scanner := bufio.NewScanner(envFile)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		value = strings.Trim(value, `"'`)
+
+		if strings.HasPrefix(key, "N8N_") {
+			viperKey := strings.ToLower(strings.TrimPrefix(key, "N8N_"))
+			if os.Getenv(key) == "" {
+				viper.Set(viperKey, value)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Error reading .env file: %v\n", err)
+	}
 }

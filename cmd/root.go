@@ -25,7 +25,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -45,7 +47,6 @@ through version control systems.`,
 			return nil
 		}
 
-		// Print help to stdout so it can be captured in tests
 		cmd.SetOut(cmd.OutOrStdout())
 		return cmd.Help()
 	},
@@ -60,11 +61,38 @@ func Execute() {
 	}
 }
 
-// GetRootCmd returns the root command for testing purposes
-func GetRootCmd() *cobra.Command {
-	return rootCmd
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringP("api-key", "k", "", "n8n API Key (env: N8N_API_KEY)")
+	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
+	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
+
+	viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key"))
+	viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url"))
 }
 
-func init() {
-	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
+// initConfig reads in config file and ENV variables if set
+func initConfig() {
+	config.LoadEnvFile()
+
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("$HOME/.n8n")
+	viper.AddConfigPath(".")
+
+	viper.SetEnvPrefix("N8N")
+	viper.AutomaticEnv()
+
+	viper.BindEnv("api_key", "N8N_API_KEY")
+	viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
+
+	viper.SetDefault("instance_url", "http://localhost:5678")
+	viper.SetDefault("api_key", "")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			fmt.Fprintf(os.Stderr, "Warning: Config file error: %v\n", err)
+		}
+	}
 }

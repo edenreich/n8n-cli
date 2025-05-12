@@ -4,206 +4,111 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnsureAPIPrefix(t *testing.T) {
+func TestGetConfig(t *testing.T) {
+	originalAPIKey := viper.GetString("api_key")
+	originalInstanceURL := viper.GetString("instance_url")
+	defer func() {
+		viper.Set("api_key", originalAPIKey)
+		viper.Set("instance_url", originalInstanceURL)
+	}()
+
 	tests := []struct {
-		name     string
-		input    string
-		expected string
+		name          string
+		apiKey        string
+		instanceURL   string
+		expectedError bool
 	}{
 		{
-			name:     "URL without trailing slash",
-			input:    "https://n8n.example.com",
-			expected: "https://n8n.example.com/api/v1",
+			name:          "Valid configuration",
+			apiKey:        "test-api-key",
+			instanceURL:   "http://test-url:5678",
+			expectedError: false,
 		},
 		{
-			name:     "URL with trailing slash",
-			input:    "https://n8n.example.com/",
-			expected: "https://n8n.example.com/api/v1",
+			name:          "Missing API key",
+			apiKey:        "",
+			instanceURL:   "http://test-url:5678",
+			expectedError: true,
 		},
 		{
-			name:     "URL already with API prefix without trailing slash",
-			input:    "https://n8n.example.com/api/v1",
-			expected: "https://n8n.example.com/api/v1",
-		},
-		{
-			name:     "URL already with API prefix with trailing slash",
-			input:    "https://n8n.example.com/api/v1/",
-			expected: "https://n8n.example.com/api/v1",
+			name:          "Missing instance URL",
+			apiKey:        "test-api-key",
+			instanceURL:   "",
+			expectedError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ensureAPIPrefix(tt.input)
-			if result != tt.expected {
-				t.Errorf("ensureAPIPrefix(%q) = %q, want %q", tt.input, result, tt.expected)
+			viper.Set("api_key", tt.apiKey)
+			viper.Set("instance_url", tt.instanceURL)
+
+			cfg, err := GetConfig()
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, cfg)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, cfg)
+				assert.Equal(t, tt.apiKey, cfg.APIToken)
+				assert.Equal(t, tt.instanceURL+"/api/v1", cfg.APIBaseURL)
 			}
 		})
 	}
 }
 
-func TestLoadConfig(t *testing.T) {
-	originalAPIKey := os.Getenv("N8N_API_KEY")
-	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
+func TestConfigFromEnvVars(t *testing.T) {
+	origAPIKey := os.Getenv("N8N_API_KEY")
+	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 	defer func() {
-		err := os.Setenv("N8N_API_KEY", originalAPIKey)
-		assert.NoError(t, err, "Failed to restore N8N_API_KEY")
-
-		err = os.Setenv("N8N_INSTANCE_URL", originalInstanceURL)
-		assert.NoError(t, err, "Failed to restore N8N_INSTANCE_URL")
-		globalConfig = nil
+		os.Setenv("N8N_API_KEY", origAPIKey)
+		os.Setenv("N8N_INSTANCE_URL", origInstanceURL)
 	}()
 
-	t.Run("Both environment variables set", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "test-api-key")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
+	os.Setenv("N8N_API_KEY", "env-test-api-key")
+	os.Setenv("N8N_INSTANCE_URL", "http://env-test-url:5678")
 
-		config, err := LoadConfig()
-		if err != nil {
-			t.Fatalf("LoadConfig() error = %v, want nil", err)
-		}
-		if config == nil {
-			t.Fatal("LoadConfig() returned nil config")
-		}
-		if config.APIToken != "test-api-key" {
-			t.Errorf("config.APIToken = %q, want %q", config.APIToken, "test-api-key")
-		}
-		if config.InstanceURL != "https://n8n.example.com" {
-			t.Errorf("config.InstanceURL = %q, want %q", config.InstanceURL, "https://n8n.example.com")
-		}
-		if config.APIBaseURL != "https://n8n.example.com/api/v1" {
-			t.Errorf("config.APIBaseURL = %q, want %q", config.APIBaseURL, "https://n8n.example.com/api/v1")
-		}
-	})
+	viper.SetEnvPrefix("N8N")
+	viper.AutomaticEnv()
+	viper.BindEnv("api_key", "N8N_API_KEY")
+	viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
 
-	t.Run("Missing API key", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
-
-		_, err = LoadConfig()
-		if err == nil {
-			t.Error("LoadConfig() error = nil, want error")
-		}
-	})
-
-	t.Run("Missing instance URL", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "test-api-key")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
-
-		_, err = LoadConfig()
-		if err == nil {
-			t.Error("LoadConfig() error = nil, want error")
-		}
-	})
+	cfg, err := GetConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, "env-test-api-key", cfg.APIToken)
+	assert.Equal(t, "http://env-test-url:5678/api/v1", cfg.APIBaseURL)
 }
 
-func TestGetConfig(t *testing.T) {
-	originalAPIKey := os.Getenv("N8N_API_KEY")
-	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
+func TestConfigPrecedence(t *testing.T) {
+	origAPIKey := os.Getenv("N8N_API_KEY")
+	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
+	origViperAPIKey := viper.GetString("api_key")
+	origViperURL := viper.GetString("instance_url")
 	defer func() {
-		if err := os.Setenv("N8N_API_KEY", originalAPIKey); err != nil {
-			t.Logf("Failed to restore N8N_API_KEY: %v", err)
-		}
-		if err := os.Setenv("N8N_INSTANCE_URL", originalInstanceURL); err != nil {
-			t.Logf("Failed to restore N8N_INSTANCE_URL: %v", err)
-		}
-		globalConfig = nil
+		os.Setenv("N8N_API_KEY", origAPIKey)
+		os.Setenv("N8N_INSTANCE_URL", origInstanceURL)
+		viper.Set("api_key", origViperAPIKey)
+		viper.Set("instance_url", origViperURL)
 	}()
 
-	t.Run("Config already loaded", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "test-api-key")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
+	os.Setenv("N8N_API_KEY", "env-api-key")
+	os.Setenv("N8N_INSTANCE_URL", "http://env-url:5678")
 
-		firstConfig, err := LoadConfig()
-		if err != nil {
-			t.Fatalf("LoadConfig() error = %v, want nil", err)
-		}
+	viper.Set("api_key", "flag-api-key")
+	viper.Set("instance_url", "http://flag-url:5678")
 
-		secondConfig, err := GetConfig()
-		if err != nil {
-			t.Fatalf("GetConfig() error = %v, want nil", err)
-		}
+	viper.SetEnvPrefix("N8N")
+	viper.AutomaticEnv()
+	viper.BindEnv("api_key", "N8N_API_KEY")
+	viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
 
-		if secondConfig != firstConfig {
-			t.Error("GetConfig() returned different config instance than LoadConfig()")
-		}
-	})
-
-	t.Run("Config not loaded yet", func(t *testing.T) {
-		globalConfig = nil
-		err := os.Setenv("N8N_API_KEY", "test-api-key")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-
-		config, err := GetConfig()
-		if err != nil {
-			t.Fatalf("GetConfig() error = %v, want nil", err)
-		}
-		if config == nil {
-			t.Fatal("GetConfig() returned nil config")
-		}
-		if config.APIToken != "test-api-key" {
-			t.Errorf("config.APIToken = %q, want %q", config.APIToken, "test-api-key")
-		}
-	})
-}
-
-func TestInitConfig(t *testing.T) {
-	originalAPIKey := os.Getenv("N8N_API_KEY")
-	originalInstanceURL := os.Getenv("N8N_INSTANCE_URL")
-	defer func() {
-		if err := os.Setenv("N8N_API_KEY", originalAPIKey); err != nil {
-			t.Logf("Failed to restore N8N_API_KEY: %v", err)
-		}
-		if err := os.Setenv("N8N_INSTANCE_URL", originalInstanceURL); err != nil {
-			t.Logf("Failed to restore N8N_INSTANCE_URL: %v", err)
-		}
-		globalConfig = nil
-	}()
-
-	t.Run("Success initialization", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "test-api-key")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "https://n8n.example.com")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
-
-		err = InitConfig()
-		if err != nil {
-			t.Fatalf("InitConfig() error = %v, want nil", err)
-		}
-
-		if globalConfig == nil {
-			t.Error("InitConfig() did not set globalConfig")
-		}
-	})
-
-	t.Run("Error initialization", func(t *testing.T) {
-		err := os.Setenv("N8N_API_KEY", "")
-		assert.NoError(t, err, "Failed to set N8N_API_KEY")
-		err = os.Setenv("N8N_INSTANCE_URL", "")
-		assert.NoError(t, err, "Failed to set N8N_INSTANCE_URL")
-		globalConfig = nil
-
-		err = InitConfig()
-		if err == nil {
-			t.Error("InitConfig() error = nil, want error")
-		}
-	})
+	cfg, err := GetConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, "flag-api-key", cfg.APIToken)
+	assert.Equal(t, "http://flag-url:5678/api/v1", cfg.APIBaseURL)
 }

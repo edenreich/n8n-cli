@@ -10,7 +10,7 @@ import (
 )
 
 func TestRootCommand(t *testing.T) {
-	cmd := GetRootCmd()
+	cmd := rootCmd
 
 	stdout, _, err := executeCommand(cmd)
 

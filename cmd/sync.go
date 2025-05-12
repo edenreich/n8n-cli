@@ -149,12 +149,10 @@ func syncWorkflows(config SyncConfig) error {
 
 	workflowNameToID := make(map[string]string)
 	for _, workflow := range serverWorkflows {
-		name, _ := workflow["name"].(string)
-		id, _ := workflow["id"].(string)
-		if name != "" && id != "" {
-			workflowNameToID[name] = id
+		if workflow.Name != "" && *workflow.Id != "" {
+			workflowNameToID[workflow.Name] = *workflow.Id
 			if config.Verbose {
-				fmt.Printf("Found server workflow: %s (ID: %s)\n", name, id)
+				fmt.Printf("Found server workflow: %s (ID: %s)\n", workflow.Name, *workflow.Id)
 			}
 		}
 	}

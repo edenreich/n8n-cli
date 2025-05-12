@@ -41,7 +41,7 @@ tasks:
   test:
     desc: 'Run the tests'
     cmds:
-      - go test ./... -coverprofile=coverage.out
+      - go test -v ./... -coverprofile=coverage.out
 
   lint:
     desc: 'Run the linter'

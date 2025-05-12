@@ -80,7 +80,6 @@ These can be set in a .env file or as environment variables.`,
 			all = true
 		}
 
-		// Get the configuration (including API token and URL)
 		cfg, err := config.GetConfig()
 		if err != nil {
 			return fmt.Errorf("error loading configuration: %w", err)

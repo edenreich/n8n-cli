@@ -6,7 +6,7 @@ import (
 )
 
 func TestVersionCommand(t *testing.T) {
-	cmd := GetRootCmd()
+	cmd := rootCmd
 
 	expectedLines := []string{
 		"n8n-cli dev",

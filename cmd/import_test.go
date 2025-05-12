@@ -46,7 +46,7 @@ func TestImportCommand(t *testing.T) {
 			tempDir := tc.setupEnv()
 			defer tc.cleanup(tempDir)
 
-			cmd := GetRootCmd()
+			cmd := rootCmd
 
 			stdout, stderr, err := executeCommand(cmd, tc.args...)
 
