@@ -28,9 +28,8 @@
   - [Manual Installation with Go](#manual-installation-with-go)
 - [Configuration](#configuration)
 - [Commands](#commands)
+  - [List](#list)
   - [Sync](#sync)
-  - [Import](#import)
-- [Workflow File Structure](#workflow-file-structure)
 
 ## Installation
 
@@ -83,6 +82,34 @@ n8n-cli -v
 n8n-cli version
 ```
 
+### List
+
+List workflows from an n8n instance:
+
+```bash
+n8n-cli workflows list
+```
+
+Options:
+
+- `--output, -o`: Output format (default: "table"). Supported formats:
+  - `table`: Human-readable tabular format
+  - `json`: JSON format for programmatic use
+  - `yaml`: YAML format for configuration files
+
+Example:
+
+```bash
+# List workflows in default table format
+n8n-cli workflows list
+
+# List workflows in JSON format
+n8n-cli workflows list --output json
+
+# List workflows in YAML format
+n8n-cli workflows list --output yaml
+```
+
 ### Sync
 
 Synchronize JSON workflows from a local directory to an n8n instance:
@@ -116,40 +143,3 @@ n8n-cli workflows sync --activate-all
 # Test without making changes
 n8n-cli workflows sync --dry-run
 ```
-
-### Import
-
-Import workflows from an n8n instance to local JSON files:
-
-```bash
-n8n-cli workflows import --directory workflows/
-```
-
-Options:
-
-- `--directory, -d`: Directory to save workflow JSON files (default: "workflows")
-- `--workflow-id, -w`: ID of a specific workflow to import
-- `--all, -a`: Import all workflows (default if no workflow-id is specified)
-- `--dry-run, -n`: Show what would be done without making changes
-- `--verbose, -v`: Show detailed output during import
-
-Example:
-
-```bash
-# Import all workflows from n8n
-n8n-cli workflows import
-
-# Import a specific workflow by ID
-n8n-cli workflows import --workflow-id 123
-
-# Test without making changes
-n8n-cli workflows import --dry-run
-```
-
-## Workflow File Structure
-
-Workflow files should be valid n8n workflow JSON files. The sync command will:
-
-1. Create new workflows for files without an ID or with an ID that doesn't exist on the n8n instance
-2. Update existing workflows that have a matching ID
-3. Activate workflows based on the "active" property in the JSON file or if --activate-all is used
