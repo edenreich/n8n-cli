@@ -20,12 +20,3 @@ func executeCommand(t *testing.T, cmd *cobra.Command, args ...string) (string, s
 	err := cmd.Execute()
 	return stdout.String(), stderr.String(), err
 }
-
-// Helper functions for creating pointers
-func strPtr(s string) *string {
-	return &s
-}
-
-func boolPtr(b bool) *bool {
-	return &b
-}

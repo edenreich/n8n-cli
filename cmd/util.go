@@ -10,12 +10,8 @@ import (
 
 // FormatAPIBaseURL ensures the base URL ends with /api/v1
 func FormatAPIBaseURL(instanceURL string) string {
-	// Remove trailing slash if present
-	if strings.HasSuffix(instanceURL, "/") {
-		instanceURL = instanceURL[:len(instanceURL)-1]
-	}
+	instanceURL = strings.TrimSuffix(instanceURL, "/")
 
-	// Add api/v1 path if not already present
 	if !strings.HasSuffix(instanceURL, "/api/v1") {
 		instanceURL = instanceURL + "/api/v1"
 	}

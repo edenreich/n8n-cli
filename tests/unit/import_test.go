@@ -19,7 +19,10 @@ import (
 func TestImportWorkflowByIDWithConfig(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "n8n-cli-test-*")
 	require.NoError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		require.NoError(t, err)
+	}()
 
 	testCases := []struct {
 		name           string

@@ -76,26 +76,25 @@ func TestImportWithMockAPI(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	// Create a temp directory for test files
 	tempDir, err := os.MkdirTemp("", "n8n-cli-test")
 	if err != nil {
 		t.Fatalf("Could not create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Fatalf("Could not remove temp directory: %v", err)
+		}
+	}()
 
-	// Set up Viper with test configuration
 	v := viper.New()
 	v.Set("api_key", "test-api-key")
 	v.Set("instance_url", mockServer.URL)
 
-	// Update the viper configuration
 	viper.Reset()
 	for _, key := range v.AllKeys() {
 		viper.Set(key, v.Get(key))
 	}
-	// We'll clean this up at the end of the test
 
-	// Test cases
 	testCases := []struct {
 		name        string
 		args        []string
@@ -137,13 +136,10 @@ func TestImportWithMockAPI(t *testing.T) {
 			expectedOut: "DRY RUN MODE",
 			expectError: false,
 			verifyFiles: func(t *testing.T, dir string) {
-				// In dry run mode, we expect nothing to be created
 				path := filepath.Join(dir, "Test_Workflow_1.json")
 
-				// Ensure file doesn't exist or was from a previous test
 				content, err := os.ReadFile(path)
 				if err == nil {
-					// If the file exists, make sure it wasn't just created (check if it has content)
 					assert.NotEmpty(t, string(content), "File should not be empty if it exists from previous test")
 				}
 			},
@@ -186,9 +182,8 @@ func TestImportWorkflowErrors(t *testing.T) {
 			name: "Invalid API URL",
 			setupServer: func() *httptest.Server {
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// This server will be closed right away
 				}))
-				server.Close() // Close immediately to simulate connection error
+				server.Close()
 				return server
 			},
 			args:          []string{"import", "--workflow-id", "123"},
@@ -223,23 +218,23 @@ func TestImportWorkflowErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := tc.setupServer()
 			defer func() {
-				// Server may already be closed in some test cases
 				if server != nil {
 					server.Close()
 				}
 			}()
 
-			// Create temp directory
 			tempDir, err := os.MkdirTemp("", "n8n-cli-test")
 			if err != nil {
 				t.Fatalf("Could not create temp directory: %v", err)
 			}
-			defer os.RemoveAll(tempDir)
+			defer func() {
+				if err := os.RemoveAll(tempDir); err != nil {
+					t.Fatalf("Could not remove temp directory: %v", err)
+				}
+			}()
 
-			// Add directory to args
 			args := append(tc.args, "--directory", tempDir)
 
-			// Set up Viper with test configuration
 			v := viper.New()
 			v.Set("api_key", "test-api-key")
 			if server != nil && server.URL != "" {
@@ -248,12 +243,10 @@ func TestImportWorkflowErrors(t *testing.T) {
 				v.Set("instance_url", "http://localhost:1") // Definitely will fail
 			}
 
-			// Update viper configuration
 			viper.Reset()
 			for _, key := range v.AllKeys() {
 				viper.Set(key, v.Get(key))
 			}
-			// Will be reset for the next test
 
 			rootCmd := cmd.GetRootCmd()
 			_, stderr, err := executeCommand(t, rootCmd, args...)
@@ -303,27 +296,26 @@ func TestImportWorkflowByIDWithConfig(t *testing.T) {
 			server := tc.setupServer()
 			defer server.Close()
 
-			// Create temp directory
 			tempDir, err := os.MkdirTemp("", "n8n-cli-test")
 			if err != nil {
 				t.Fatalf("Could not create temp directory: %v", err)
 			}
-			defer os.RemoveAll(tempDir)
+			defer func() {
+				if err := os.RemoveAll(tempDir); err != nil {
+					t.Fatalf("Could not remove temp directory: %v", err)
+				}
+			}()
 
-			// Create mock config
 			mockConfig := tests.NewMockConfig()
 			mockConfig.GetAPIBaseURLReturns(server.URL + "/api/v1")
 			mockConfig.GetAPITokenReturns("mock-token")
 
-			// Import the workflow
 			err = cmd.ImportWorkflowByIDWithConfig(mockConfig, tempDir, "mock-id", false, true)
 
 			if tc.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-
-				// Check if file was created
 				filePath := filepath.Join(tempDir, "Mock_Workflow.json")
 				_, err := os.Stat(filePath)
 				assert.NoError(t, err, "Expected workflow file to exist")
