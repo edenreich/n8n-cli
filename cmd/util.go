@@ -29,3 +29,36 @@ func FindWorkflow(name string, workflows []n8n.Workflow) (string, error) {
 
 	return "", fmt.Errorf("workflow with name '%s' not found", name)
 }
+
+// SanitizeFilename converts a workflow name to a valid filename
+func SanitizeFilename(name string) string {
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "\\", "_")
+	name = strings.ReplaceAll(name, ":", "_")
+	name = strings.ReplaceAll(name, "*", "_")
+	name = strings.ReplaceAll(name, "?", "_")
+	name = strings.ReplaceAll(name, "\"", "_")
+	name = strings.ReplaceAll(name, "<", "_")
+	name = strings.ReplaceAll(name, ">", "_")
+	name = strings.ReplaceAll(name, "|", "_")
+	name = strings.ReplaceAll(name, "$", "_")
+	name = strings.ReplaceAll(name, "%", "_")
+	name = strings.ReplaceAll(name, "^", "_")
+	name = strings.ReplaceAll(name, "&", "_")
+
+	var result strings.Builder
+	for _, r := range name {
+		if r >= 0x1F000 {
+			result.WriteRune('_')
+		} else {
+			result.WriteRune(r)
+		}
+	}
+
+	if result.Len() > 0 {
+		return result.String()
+	}
+
+	return name
+}

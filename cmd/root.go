@@ -71,7 +71,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "n8n API Key (env: N8N_API_KEY)")
 	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
-	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
+	rootCmd.Flags().Bool("version", false, "Display the version information")
 
 	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
 		fmt.Fprintf(os.Stderr, "Error binding api-key flag: %v\n", err)
@@ -79,6 +79,7 @@ func init() {
 	if err := viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
 		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
 	}
+	rootCmd.Flags().BoolP("verbose", "V", false, "Show detailed output during synchronization")
 }
 
 // initConfig reads in config file and ENV variables if set

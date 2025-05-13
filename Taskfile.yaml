@@ -49,7 +49,7 @@ tasks:
   test-unit:
     desc: 'Run only unit tests'
     cmds:
-      - go test -v -short ./... -coverprofile=coverage.out
+      - go test -v ./tests/unit -coverprofile=coverage.out
 
   test-integration:
     desc: 'Run integration tests'

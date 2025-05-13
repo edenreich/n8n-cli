@@ -19,13 +19,29 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package main
+package workflows
 
 import (
 	"github.com/edenreich/n8n-cli/cmd"
-	_ "github.com/edenreich/n8n-cli/cmd/workflows"
+	"github.com/spf13/cobra"
 )
 
-func main() {
-	cmd.Execute()
+// importCmd represents the import command
+var ImportCmd = &cobra.Command{
+	Use:   "import",
+	Short: "Import JSON workflows into n8n instance",
+	Long:  `Import command imports workflows from n8n instance.`,
+	RunE:  importWorkflows,
+}
+
+func init() {
+	cmd.GetWorkflowsCmd().AddCommand(ImportCmd)
+}
+
+// importWorkflows imports workflows from n8n instance
+func importWorkflows(cmd *cobra.Command, args []string) error {
+	cmd.Println("Importing workflows...")
+	// TODO - implement import command here
+
+	return nil
 }
