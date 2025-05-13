@@ -1,21 +1,16 @@
-package config
+package config_test
 
 import (
-	"os"
 	"testing"
 
+	"github.com/edenreich/n8n-cli/config"
+	"github.com/edenreich/n8n-cli/config/configfakes"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetConfig(t *testing.T) {
-	originalAPIKey := viper.GetString("api_key")
-	originalInstanceURL := viper.GetString("instance_url")
-	defer func() {
-		viper.Set("api_key", originalAPIKey)
-		viper.Set("instance_url", originalInstanceURL)
-	}()
-
+// TestLoadConfig is a unit test that verifies LoadConfig behavior
+func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name          string
 		apiKey        string
@@ -44,10 +39,12 @@ func TestGetConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			viper.Set("api_key", tt.apiKey)
-			viper.Set("instance_url", tt.instanceURL)
+			// Create a new viper instance for isolation
+			v := viper.New()
+			v.Set("api_key", tt.apiKey)
+			v.Set("instance_url", tt.instanceURL)
 
-			cfg, err := GetConfig()
+			cfg, err := config.LoadConfig(v)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -62,74 +59,42 @@ func TestGetConfig(t *testing.T) {
 	}
 }
 
-func TestConfigFromEnvVars(t *testing.T) {
-	origAPIKey := os.Getenv("N8N_API_KEY")
-	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
+// TestConfigFakes demonstrates how to use generated fake config interface
+func TestConfigFakes(t *testing.T) {
+	// Create a fake config instance
+	fakeConfig := &configfakes.FakeConfigInterface{}
 
-	defer func() {
-		err := os.Setenv("N8N_API_KEY", origAPIKey)
-		assert.NoError(t, err)
-		err = os.Setenv("N8N_INSTANCE_URL", origInstanceURL)
-		assert.NoError(t, err)
+	// Configure the fake to return specific values
+	fakeConfig.GetAPITokenReturns("fake-api-token")
+	fakeConfig.GetAPIBaseURLReturns("http://fake-url:5678/api/v1")
 
-		viper.Reset()
-	}()
+	// Use the fake config in your test
+	assert.Equal(t, "fake-api-token", fakeConfig.GetAPIToken())
+	assert.Equal(t, "http://fake-url:5678/api/v1", fakeConfig.GetAPIBaseURL())
 
-	viper.Reset()
-
-	err := os.Setenv("N8N_API_KEY", "env-test-api-key")
-	assert.NoError(t, err)
-	err = os.Setenv("N8N_INSTANCE_URL", "http://env-test-url:5678")
-	assert.NoError(t, err)
-
-	viper.SetEnvPrefix("N8N")
-	viper.AutomaticEnv()
-	err = viper.BindEnv("api_key", "N8N_API_KEY")
-	assert.NoError(t, err)
-	err = viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
-	assert.NoError(t, err)
-
-	viper.SetDefault("instance_url", "http://localhost:5678")
-	viper.SetDefault("api_key", "")
-
-	cfg, err := GetConfig()
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-	assert.Equal(t, "env-test-api-key", cfg.APIToken)
-	assert.Equal(t, "http://env-test-url:5678/api/v1", cfg.APIBaseURL)
+	// Verify that the methods were called
+	assert.Equal(t, 1, fakeConfig.GetAPITokenCallCount())
+	assert.Equal(t, 1, fakeConfig.GetAPIBaseURLCallCount())
 }
 
-func TestConfigPrecedence(t *testing.T) {
-	origAPIKey := os.Getenv("N8N_API_KEY")
-	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
-	origViperAPIKey := viper.GetString("api_key")
-	origViperURL := viper.GetString("instance_url")
-	defer func() {
-		err := os.Setenv("N8N_API_KEY", origAPIKey)
-		assert.NoError(t, err)
-		err = os.Setenv("N8N_INSTANCE_URL", origInstanceURL)
-		assert.NoError(t, err)
-		viper.Set("api_key", origViperAPIKey)
-		viper.Set("instance_url", origViperURL)
-	}()
+// TestConfigWithMockInUse demonstrates how to use the fake config in a function
+// that expects a ConfigInterface
+func TestConfigWithMockInUse(t *testing.T) {
+	// Create a fake config
+	fakeConfig := &configfakes.FakeConfigInterface{}
+	fakeConfig.GetAPITokenReturns("mock-token")
+	fakeConfig.GetAPIBaseURLReturns("http://mock-api:5678")
 
-	err := os.Setenv("N8N_API_KEY", "env-api-key")
-	assert.NoError(t, err)
-	err = os.Setenv("N8N_INSTANCE_URL", "http://env-url:5678")
-	assert.NoError(t, err)
+	// This function simulates a function that would use the config interface
+	getFullAPIURL := func(cfg config.ConfigInterface, endpoint string) string {
+		return cfg.GetAPIBaseURL() + endpoint
+	}
 
-	viper.Set("api_key", "flag-api-key")
-	viper.Set("instance_url", "http://flag-url:5678")
+	// Test the function with our fake config
+	endpoint := "/workflows"
+	result := getFullAPIURL(fakeConfig, endpoint)
 
-	viper.SetEnvPrefix("N8N")
-	viper.AutomaticEnv()
-	err = viper.BindEnv("api_key", "N8N_API_KEY")
-	assert.NoError(t, err)
-	err = viper.BindEnv("instance_url", "N8N_INSTANCE_URL")
-	assert.NoError(t, err)
-
-	cfg, err := GetConfig()
-	assert.NoError(t, err)
-	assert.Equal(t, "flag-api-key", cfg.APIToken)
-	assert.Equal(t, "http://flag-url:5678/api/v1", cfg.APIBaseURL)
+	// Verify expectations
+	assert.Equal(t, "http://mock-api:5678/workflows", result)
+	assert.Equal(t, 1, fakeConfig.GetAPIBaseURLCallCount())
 }

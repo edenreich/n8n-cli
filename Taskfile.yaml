@@ -23,10 +23,18 @@ tasks:
     cmds:
       - spectral lint --verbose openapi.yml
 
-  generate:
+  oas-generate:
     desc: Generate Go types from OpenAPI specification
     cmds:
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest --package=n8n --generate types -o n8n/generated_types.go openapi.yml
+
+  generate:
+    desc: 'Generate interface and shim for a package with mocks'
+    deps:
+      - testing-deps
+    cmds:
+      - counterfeiter -o config/configfakes/fake_config.go ./config ConfigInterface
+      - COUNTERFEITER_NO_GENERATE_WARNING=true go generate ./...
 
   cli:
     desc: 'Run the n8n CLI'
@@ -38,12 +46,33 @@ tasks:
     cmds:
       - go build -ldflags="{{.LD_FLAGS}}" -o n8n-cli main.go
 
-  test:
-    desc: 'Run the tests'
+  test-unit:
+    desc: 'Run only unit tests'
     cmds:
-      - go test -v ./... -coverprofile=coverage.out
+      - go test -v -short ./... -coverprofile=coverage.out
+
+  test-integration:
+    desc: 'Run integration tests'
+    cmds:
+      - go test -v ./tests/integration/... -coverprofile=integration-coverage.out
+
+  test-all:
+    desc: 'Run all tests (unit and integration)'
+    cmds:
+      - task: test-unit
+      - task: test-integration
+
+  test:
+    desc: 'Run the default tests (unit tests only)'
+    cmds:
+      - task: test-unit
 
   lint:
     desc: 'Run the linter'
     cmds:
       - golangci-lint run
+
+  testing-deps:
+    desc: 'Install dependencies for testing'
+    cmds:
+      - go install github.com/maxbrunsfeld/counterfeiter/v6@latest
