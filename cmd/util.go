@@ -20,7 +20,6 @@ func FormatAPIBaseURL(instanceURL string) string {
 }
 
 // FindWorkflow looks up a workflow by exact name match in a list of workflows
-// This is a simplified version for unit testing purposes
 func FindWorkflow(name string, workflows []n8n.Workflow) (string, error) {
 	for _, wf := range workflows {
 		if wf.Name == name {
