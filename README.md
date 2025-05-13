@@ -88,7 +88,7 @@ n8n-cli version
 Synchronize JSON workflows from a local directory to an n8n instance:
 
 ```bash
-n8n-cli sync --directory hack/workflows
+n8n-cli workflows sync --directory hack/workflows
 ```
 
 Options:
@@ -111,10 +111,10 @@ Example:
 
 ```bash
 # Sync all workflows and activate them
-n8n-cli sync --activate-all
+n8n-cli workflows sync --activate-all
 
 # Test without making changes
-n8n-cli sync --dry-run
+n8n-cli workflows sync --dry-run
 ```
 
 ### Import
@@ -122,7 +122,7 @@ n8n-cli sync --dry-run
 Import workflows from an n8n instance to local JSON files:
 
 ```bash
-n8n-cli import --directory hack/workflows
+n8n-cli workflows import --directory hack/workflows
 ```
 
 Options:
@@ -137,13 +137,13 @@ Example:
 
 ```bash
 # Import all workflows from n8n
-n8n-cli import
+n8n-cli workflows import
 
 # Import a specific workflow by ID
-n8n-cli import --workflow-id 123
+n8n-cli workflows import --workflow-id 123
 
 # Test without making changes
-n8n-cli import --dry-run
+n8n-cli workflows import --dry-run
 ```
 
 ## Workflow File Structure
