@@ -163,10 +163,14 @@ func TestListWorkflows(t *testing.T) {
 			defer cleanup()
 
 			if tc.outputFormat != "table" {
-				workflows.ListCmd.Flags().Set("output", tc.outputFormat)
+				err := workflows.ListCmd.Flags().Set("output", tc.outputFormat)
+				require.NoError(t, err, "Expected to set output format flag")
 			}
 
-			defer workflows.ListCmd.Flags().Set("output", "table")
+			defer func() {
+				err := workflows.ListCmd.Flags().Set("output", "table")
+				require.NoError(t, err, "Expected to reset output format flag")
+			}()
 
 			stdout, stderr, err := executeCommand(t, workflows.ListCmd)
 
