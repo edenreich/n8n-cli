@@ -22,12 +22,27 @@ THE SOFTWARE.
 package workflows
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"text/tabwriter"
 
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+)
+
+// Output format constants
+const (
+	formatTable = "table"
+	formatJSON  = "json"
+	formatYAML  = "yaml"
+)
+
+var (
+	// outputFormat defines the output format flag for the list command
+	outputFormat string
 )
 
 // listCmd represents the list command
@@ -39,6 +54,7 @@ var ListCmd = &cobra.Command{
 }
 
 func init() {
+	ListCmd.Flags().StringVarP(&outputFormat, "output", "o", formatTable, "Output format: table, json, or yaml")
 	rootcmd.GetWorkflowsCmd().AddCommand(ListCmd)
 }
 
@@ -76,6 +92,28 @@ func printWorkflowTable(cmd *cobra.Command, workflows []n8n.Workflow) {
 	}
 }
 
+// printWorkflowJSON prints the workflows in JSON format
+func printWorkflowJSON(cmd *cobra.Command, workflows []n8n.Workflow) error {
+	jsonData, err := json.MarshalIndent(workflows, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling workflows to JSON: %w", err)
+	}
+
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), string(jsonData))
+	return err
+}
+
+// printWorkflowYAML prints the workflows in YAML format
+func printWorkflowYAML(cmd *cobra.Command, workflows []n8n.Workflow) error {
+	yamlData, err := yaml.Marshal(workflows)
+	if err != nil {
+		return fmt.Errorf("error marshaling workflows to YAML: %w", err)
+	}
+
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), string(yamlData))
+	return err
+}
+
 // listWorkflows fetches and lists workflows from the n8n instance
 func listWorkflows(cmd *cobra.Command, args []string) error {
 	cfg, err := rootcmd.GetConfigProvider()
@@ -95,8 +133,20 @@ func listWorkflows(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	cmd.Println("Workflows in n8n instance:")
-	cmd.Println("")
-	printWorkflowTable(cmd, *workflowList.Data)
-	return nil
+	// Output based on format
+	format := strings.ToLower(outputFormat)
+
+	switch format {
+	case formatJSON:
+		return printWorkflowJSON(cmd, *workflowList.Data)
+	case formatYAML:
+		return printWorkflowYAML(cmd, *workflowList.Data)
+	case formatTable:
+		cmd.Println("Workflows in n8n instance:")
+		cmd.Println("")
+		printWorkflowTable(cmd, *workflowList.Data)
+		return nil
+	default:
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	}
 }

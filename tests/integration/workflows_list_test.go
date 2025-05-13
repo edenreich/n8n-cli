@@ -2,6 +2,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,11 +12,14 @@ import (
 	"github.com/edenreich/n8n-cli/cmd"
 	"github.com/edenreich/n8n-cli/cmd/workflows"
 	"github.com/edenreich/n8n-cli/config/configfakes"
+	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
-// TestListWorkflowsOutput tests that the list command outputs a table with ID, NAME, ACTIVE columns
-func TestListWorkflowsOutput(t *testing.T) {
+// setupListWorkflowsTest creates a test server and configures the test environment
+func setupListWorkflowsTest(t *testing.T, responseData string) (*httptest.Server, func()) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("X-N8N-API-KEY")
 		if apiKey != "test-api-key" {
@@ -24,62 +28,156 @@ func TestListWorkflowsOutput(t *testing.T) {
 			return
 		}
 
-		// Return mock workflow data
 		if r.URL.Path == "/api/v1/workflows" {
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = fmt.Fprint(w, `{
-				"data": [
-					{
-						"id": "123",
-						"name": "Test Workflow 1",
-						"active": true
-					},
-					{
-						"id": "456",
-						"name": "Test Workflow 2",
-						"active": false
-					},
-					{
-						"id": "789",
-						"name": "Test Workflow 3",
-						"active": true
-					}
-				],
-				"nextCursor": null
-			}`)
+			_, _ = fmt.Fprint(w, responseData)
 			return
 		}
 
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = fmt.Fprint(w, `{"error": "Not found"}`)
 	}))
-	defer mockServer.Close()
 
 	fakeConfig := &configfakes.FakeConfigInterface{}
 	fakeConfig.GetAPITokenReturns("test-api-key")
 	fakeConfig.GetAPIBaseURLReturns(mockServer.URL + "/api/v1")
 
 	origGetConfigProvider := cmd.GetConfigProvider
-	defer func() { cmd.GetConfigProvider = origGetConfigProvider }()
 	cmd.GetConfigProvider = func() (cmd.ConfigProvider, error) {
 		return fakeConfig, nil
 	}
 
-	stdout, stderr, err := executeCommand(t, workflows.ListCmd)
+	cleanup := func() {
+		mockServer.Close()
+		cmd.GetConfigProvider = origGetConfigProvider
+	}
 
-	assert.NoError(t, err, "Expected no error when executing list command")
-	assert.Empty(t, stderr, "Expected no stderr output")
+	return mockServer, cleanup
+}
 
-	assert.Contains(t, stdout, "ID")
-	assert.Contains(t, stdout, "NAME")
-	assert.Contains(t, stdout, "ACTIVE")
+func TestListWorkflows(t *testing.T) {
+	mockedResponse := `{
+		"data": [
+			{
+				"id": "123",
+				"name": "Test Workflow 1",
+				"active": true
+			},
+			{
+				"id": "456",
+				"name": "Test Workflow 2",
+				"active": false
+			},
+			{
+				"id": "789", 
+				"name": "Test Workflow 3",
+				"active": true
+			}
+		],
+		"nextCursor": null
+	}`
 
-	assert.Contains(t, stdout, "123")
-	assert.Contains(t, stdout, "Test Workflow 1")
-	assert.Contains(t, stdout, "Test Workflow 2")
-	assert.Contains(t, stdout, "Test Workflow 3")
+	tests := []struct {
+		name           string
+		outputFormat   string
+		responseData   string
+		expectedError  bool
+		errorContains  string
+		validateOutput func(t *testing.T, stdout string)
+	}{
+		{
+			name:          "Table output format",
+			outputFormat:  "table",
+			responseData:  mockedResponse,
+			expectedError: false,
+			validateOutput: func(t *testing.T, stdout string) {
+				assert.Contains(t, stdout, "ID")
+				assert.Contains(t, stdout, "NAME")
+				assert.Contains(t, stdout, "ACTIVE")
+				assert.Contains(t, stdout, "123")
+				assert.Contains(t, stdout, "Test Workflow 1")
+				assert.Contains(t, stdout, "Test Workflow 2")
+				assert.Contains(t, stdout, "Test Workflow 3")
+				assert.True(t, strings.Contains(stdout, "true") || strings.Contains(stdout, "Yes") ||
+					strings.Contains(stdout, "Active") || strings.Contains(stdout, "✓"),
+					"Expected active status to be indicated for active workflows")
+			},
+		},
+		{
+			name:          "JSON output format",
+			outputFormat:  "json",
+			responseData:  mockedResponse,
+			expectedError: false,
+			validateOutput: func(t *testing.T, stdout string) {
+				var parsedWorkflows []n8n.Workflow
+				err := json.Unmarshal([]byte(stdout), &parsedWorkflows)
+				require.NoError(t, err, "Expected to parse valid JSON")
 
-	assert.True(t, strings.Contains(stdout, "true") || strings.Contains(stdout, "Yes") ||
-		strings.Contains(stdout, "Active") || strings.Contains(stdout, "✓"),
-		"Expected active status to be indicated for active workflows")
+				assert.Equal(t, 3, len(parsedWorkflows), "Expected 3 workflows")
+				assert.Equal(t, "123", *parsedWorkflows[0].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 1", parsedWorkflows[0].Name, "Expected name to match")
+				assert.True(t, *parsedWorkflows[0].Active, "Expected first workflow to be active")
+				assert.Equal(t, "456", *parsedWorkflows[1].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 2", parsedWorkflows[1].Name, "Expected name to match")
+				assert.False(t, *parsedWorkflows[1].Active, "Expected second workflow to be inactive")
+				assert.Equal(t, "789", *parsedWorkflows[2].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 3", parsedWorkflows[2].Name, "Expected name to match")
+				assert.True(t, *parsedWorkflows[2].Active, "Expected third workflow to be active")
+			},
+		},
+		{
+			name:          "YAML output format",
+			outputFormat:  "yaml",
+			responseData:  mockedResponse,
+			expectedError: false,
+			validateOutput: func(t *testing.T, stdout string) {
+				var parsedWorkflows []n8n.Workflow
+				err := yaml.Unmarshal([]byte(stdout), &parsedWorkflows)
+				require.NoError(t, err, "Expected to parse valid YAML")
+
+				assert.Equal(t, 3, len(parsedWorkflows), "Expected 3 workflows")
+				assert.Equal(t, "123", *parsedWorkflows[0].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 1", parsedWorkflows[0].Name, "Expected name to match")
+				assert.True(t, *parsedWorkflows[0].Active, "Expected first workflow to be active")
+				assert.Equal(t, "456", *parsedWorkflows[1].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 2", parsedWorkflows[1].Name, "Expected name to match")
+				assert.False(t, *parsedWorkflows[1].Active, "Expected second workflow to be inactive")
+				assert.Equal(t, "789", *parsedWorkflows[2].Id, "Expected ID to match")
+				assert.Equal(t, "Test Workflow 3", parsedWorkflows[2].Name, "Expected name to match")
+				assert.True(t, *parsedWorkflows[2].Active, "Expected third workflow to be active")
+			},
+		},
+		{
+			name:           "Invalid output format",
+			outputFormat:   "xml",
+			responseData:   mockedResponse,
+			expectedError:  true,
+			errorContains:  "unsupported output format: xml",
+			validateOutput: func(t *testing.T, stdout string) {},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, cleanup := setupListWorkflowsTest(t, tc.responseData)
+			defer cleanup()
+
+			if tc.outputFormat != "table" {
+				workflows.ListCmd.Flags().Set("output", tc.outputFormat)
+			}
+
+			defer workflows.ListCmd.Flags().Set("output", "table")
+
+			stdout, stderr, err := executeCommand(t, workflows.ListCmd)
+
+			if tc.expectedError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else {
+				assert.NoError(t, err, "Expected no error when executing list command")
+				assert.Empty(t, stderr, "Expected no stderr output")
+				tc.validateOutput(t, stdout)
+			}
+		})
+	}
 }
