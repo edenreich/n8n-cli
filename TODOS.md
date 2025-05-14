@@ -64,6 +64,7 @@ This document outlines essential features for the n8n-cli tool based on the gene
 - [ ] Add support for multiple n8n instances (profiles)
 - [ ] Create workspace configuration for team collaboration
 - [ ] Add support for environment-specific variables
+- [x] Add check-dirty feature to CI pipeline to detect uncommitted generated files
 
 ## Documentation
 

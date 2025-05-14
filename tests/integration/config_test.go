@@ -6,14 +6,11 @@ import (
 	"testing"
 
 	"github.com/edenreich/n8n-cli/config"
-	"github.com/edenreich/n8n-cli/tests"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigFromEnvVars(t *testing.T) {
-	tests.SkipIfNotIntegration(t)
-
 	origAPIKey := os.Getenv("N8N_API_KEY")
 	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 
@@ -48,8 +45,6 @@ func TestConfigFromEnvVars(t *testing.T) {
 }
 
 func TestConfigPrecedence(t *testing.T) {
-	tests.SkipIfNotIntegration(t)
-
 	origAPIKey := os.Getenv("N8N_API_KEY")
 	origInstanceURL := os.Getenv("N8N_INSTANCE_URL")
 

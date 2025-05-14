@@ -37,6 +37,22 @@ jobs:
       - name: Lint OpenAPI Specification
         run: spectral lint --verbose openapi.yml
 
+      - name: Generate and tidy
+        run: |
+          go mod tidy
+          go generate ./...
+
+      - name: Check for uncommitted changes
+        run: |
+          if ! git diff-index --quiet HEAD --; then
+            echo "Error: Uncommitted changes detected after go mod tidy and go generate"
+            echo "Please commit these changes or update your PR"
+            git status --short
+            git diff
+            exit 1
+          fi
+          echo "Repository is clean - no uncommitted changes detected"
+
       - name: Build
         run: go build -v ./...
 

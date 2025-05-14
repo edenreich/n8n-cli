@@ -6,14 +6,11 @@ import (
 	"testing"
 
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
-	"github.com/edenreich/n8n-cli/tests"
 	"github.com/spf13/cobra"
 )
 
 // executeCommand is a helper to execute a command and capture its output
 func executeCommand(t *testing.T, cmd *cobra.Command, args ...string) (string, string, error) {
-	tests.SkipIfNotIntegration(t)
-
 	rootCmd := rootcmd.GetRootCmd()
 	if cmd.Use == "list" && cmd.Parent() != nil && cmd.Parent().Use == "workflows" {
 		args = append([]string{"workflows", "list"}, args...)

@@ -56,16 +56,11 @@ tasks:
     cmds:
       - go test -v ./tests/integration/... -coverprofile=integration-coverage.out
 
-  test-all:
+  test:
     desc: 'Run all tests (unit and integration)'
     cmds:
       - task: test-unit
       - task: test-integration
-
-  test:
-    desc: 'Run the default tests (unit tests only)'
-    cmds:
-      - task: test-unit
 
   lint:
     desc: 'Run the linter'

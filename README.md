@@ -143,3 +143,29 @@ n8n-cli workflows sync --activate-all
 # Test without making changes
 n8n-cli workflows sync --dry-run
 ```
+
+## Development
+
+### Available Tasks
+
+The project uses [Taskfile](https://taskfile.dev) for automating common development operations:
+
+```bash
+# Run unit tests
+task test-unit
+
+# Run integration tests
+task test-integration
+
+# Run all tests
+task test-all
+
+# Run linting
+task lint
+
+# Build the CLI
+task build
+
+# Run the CLI during development (args are passed to the CLI)
+task cli -- workflows list
+```
