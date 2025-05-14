@@ -36,3 +36,8 @@ func executeCommand(t *testing.T, cmd *cobra.Command, args ...string) (string, s
 	err := rootCmd.Execute()
 	return stdout.String(), stderr.String(), err
 }
+
+// Helper function to create string pointers
+func stringPtr(s string) *string {
+	return &s
+}

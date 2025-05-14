@@ -133,7 +133,6 @@ func listWorkflows(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Output based on format
 	format := strings.ToLower(outputFormat)
 
 	switch format {
@@ -142,8 +141,6 @@ func listWorkflows(cmd *cobra.Command, args []string) error {
 	case formatYAML:
 		return printWorkflowYAML(cmd, *workflowList.Data)
 	case formatTable:
-		cmd.Println("Workflows in n8n instance:")
-		cmd.Println("")
 		printWorkflowTable(cmd, *workflowList.Data)
 		return nil
 	default:
