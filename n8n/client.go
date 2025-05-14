@@ -92,3 +92,38 @@ func (c *Client) ActivateWorkflow(id string) (*Workflow, error) {
 
 	return &result, nil
 }
+
+// DeactivateWorkflow deactivates a workflow by ID
+func (c *Client) DeactivateWorkflow(id string) (*Workflow, error) {
+	url := fmt.Sprintf("%s/workflows/%s/deactivate", c.baseURL, id)
+
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var result Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}

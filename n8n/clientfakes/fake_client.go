@@ -21,6 +21,19 @@ type FakeClientInterface struct {
 		result1 *n8n.Workflow
 		result2 error
 	}
+	DeactivateWorkflowStub        func(string) (*n8n.Workflow, error)
+	deactivateWorkflowMutex       sync.RWMutex
+	deactivateWorkflowArgsForCall []struct {
+		arg1 string
+	}
+	deactivateWorkflowReturns struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	deactivateWorkflowReturnsOnCall map[int]struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
 	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
@@ -101,6 +114,70 @@ func (fake *FakeClientInterface) ActivateWorkflowReturnsOnCall(i int, result1 *n
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) DeactivateWorkflow(arg1 string) (*n8n.Workflow, error) {
+	fake.deactivateWorkflowMutex.Lock()
+	ret, specificReturn := fake.deactivateWorkflowReturnsOnCall[len(fake.deactivateWorkflowArgsForCall)]
+	fake.deactivateWorkflowArgsForCall = append(fake.deactivateWorkflowArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.DeactivateWorkflowStub
+	fakeReturns := fake.deactivateWorkflowReturns
+	fake.recordInvocation("DeactivateWorkflow", []interface{}{arg1})
+	fake.deactivateWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) DeactivateWorkflowCallCount() int {
+	fake.deactivateWorkflowMutex.RLock()
+	defer fake.deactivateWorkflowMutex.RUnlock()
+	return len(fake.deactivateWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) DeactivateWorkflowCalls(stub func(string) (*n8n.Workflow, error)) {
+	fake.deactivateWorkflowMutex.Lock()
+	defer fake.deactivateWorkflowMutex.Unlock()
+	fake.DeactivateWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) DeactivateWorkflowArgsForCall(i int) string {
+	fake.deactivateWorkflowMutex.RLock()
+	defer fake.deactivateWorkflowMutex.RUnlock()
+	argsForCall := fake.deactivateWorkflowArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) DeactivateWorkflowReturns(result1 *n8n.Workflow, result2 error) {
+	fake.deactivateWorkflowMutex.Lock()
+	defer fake.deactivateWorkflowMutex.Unlock()
+	fake.DeactivateWorkflowStub = nil
+	fake.deactivateWorkflowReturns = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) DeactivateWorkflowReturnsOnCall(i int, result1 *n8n.Workflow, result2 error) {
+	fake.deactivateWorkflowMutex.Lock()
+	defer fake.deactivateWorkflowMutex.Unlock()
+	fake.DeactivateWorkflowStub = nil
+	if fake.deactivateWorkflowReturnsOnCall == nil {
+		fake.deactivateWorkflowReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Workflow
+			result2 error
+		})
+	}
+	fake.deactivateWorkflowReturnsOnCall[i] = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
@@ -162,6 +239,8 @@ func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.activateWorkflowMutex.RLock()
 	defer fake.activateWorkflowMutex.RUnlock()
+	fake.deactivateWorkflowMutex.RLock()
+	defer fake.deactivateWorkflowMutex.RUnlock()
 	fake.getWorkflowsMutex.RLock()
 	defer fake.getWorkflowsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

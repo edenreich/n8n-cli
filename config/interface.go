@@ -3,7 +3,7 @@ package config
 
 // ConfigInterface defines the contract for configuration objects
 //
-//go:generate counterfeiter -o configfakes/fake_config.go . ConfigInterface
+// counterfeiter:generate -o configfakes/fake_config.go . ConfigInterface
 type ConfigInterface interface {
 	// GetAPIToken returns the API token for authenticating with the n8n API
 	GetAPIToken() string
