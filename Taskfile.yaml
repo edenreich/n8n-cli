@@ -33,7 +33,6 @@ tasks:
     deps:
       - testing-deps
     cmds:
-      - counterfeiter -o config/configfakes/fake_config.go ./config ConfigInterface
       - COUNTERFEITER_NO_GENERATE_WARNING=true go generate ./...
 
   cli:

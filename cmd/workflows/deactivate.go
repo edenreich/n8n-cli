@@ -26,14 +26,13 @@ import (
 	"io"
 
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
-	"github.com/edenreich/n8n-cli/config"
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // DeactivateCommand represents the command to deactivate a workflow
 type DeactivateCommand struct {
-	Config config.Config
 	Out    io.Writer
 	ErrOut io.Writer
 	Client *n8n.Client
@@ -58,14 +57,10 @@ func deactivateWorkflow(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("this command requires a workflow ID")
 	}
 
-	configProvider, err := rootcmd.GetConfigProvider()
-	if err != nil {
-		return err
-	}
+	apiKey := viper.Get("api_key").(string)
+	instanceURL := viper.Get("instance_url").(string)
 
-	baseURL := configProvider.GetAPIBaseURL()
-	apiToken := configProvider.GetAPIToken()
-	client := n8n.NewClient(baseURL, apiToken)
+	client := n8n.NewClient(instanceURL, apiKey)
 
 	workflowID := args[0]
 	workflow, err := client.DeactivateWorkflow(workflowID)

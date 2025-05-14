@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edenreich/n8n-cli/cmd"
 	"github.com/edenreich/n8n-cli/cmd/workflows"
-	"github.com/edenreich/n8n-cli/config/configfakes"
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/edenreich/n8n-cli/n8n"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -38,18 +38,13 @@ func setupListWorkflowsTest(t *testing.T, responseData string) (*httptest.Server
 		_, _ = fmt.Fprint(w, `{"error": "Not found"}`)
 	}))
 
-	fakeConfig := &configfakes.FakeConfigInterface{}
-	fakeConfig.GetAPITokenReturns("test-api-key")
-	fakeConfig.GetAPIBaseURLReturns(mockServer.URL + "/api/v1")
-
-	origGetConfigProvider := cmd.GetConfigProvider
-	cmd.GetConfigProvider = func() (cmd.ConfigProvider, error) {
-		return fakeConfig, nil
-	}
+	viper.Reset()
+	viper.Set("api_key", "test-api-key")
+	viper.Set("instance_url", mockServer.URL)
+	config.Initialize()
 
 	cleanup := func() {
 		mockServer.Close()
-		cmd.GetConfigProvider = origGetConfigProvider
 	}
 
 	return mockServer, cleanup

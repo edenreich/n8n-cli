@@ -1,6 +1,7 @@
 package n8n
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,7 +18,7 @@ type Client struct {
 // NewClient creates a new n8n client
 func NewClient(baseURL, apiToken string) *Client {
 	return &Client{
-		baseURL:  baseURL,
+		baseURL:  baseURL + "/api/v1",
 		apiToken: apiToken,
 		client:   &http.Client{},
 	}
@@ -126,4 +127,113 @@ func (c *Client) DeactivateWorkflow(id string) (*Workflow, error) {
 	}
 
 	return &result, nil
+}
+
+// CreateWorkflow creates a new workflow
+func (c *Client) CreateWorkflow(workflow *Workflow) (*Workflow, error) {
+	url := fmt.Sprintf("%s/workflows", c.baseURL)
+
+	body, err := json.Marshal(workflow)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling workflow: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var result Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// UpdateWorkflow updates an existing workflow by its ID
+func (c *Client) UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error) {
+	url := fmt.Sprintf("%s/workflows/%s", c.baseURL, id)
+
+	body, err := json.Marshal(workflow)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling workflow: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var result Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// DeleteWorkflow deletes a workflow by ID
+func (c *Client) DeleteWorkflow(id string) error {
+	url := fmt.Sprintf("%s/workflows/%s", c.baseURL, id)
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	return nil
 }

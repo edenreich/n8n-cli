@@ -3,7 +3,7 @@ package n8n
 
 // ClientInterface defines the contract for client objects
 //
-// counterfeiter:generate -o clientfakes/fake_client.go . ClientInterface
+//go:generate go tool counterfeiter -o clientfakes/fake_client.go . ClientInterface
 type ClientInterface interface {
 	// GetWorkflows fetches workflows from the n8n API
 	GetWorkflows() (*WorkflowList, error)
@@ -11,6 +11,12 @@ type ClientInterface interface {
 	ActivateWorkflow(id string) (*Workflow, error)
 	// DeactivateWorkflow deactivates a workflow by its ID
 	DeactivateWorkflow(id string) (*Workflow, error)
+	// CreateWorkflow creates a new workflow
+	CreateWorkflow(workflow *Workflow) (*Workflow, error)
+	// UpdateWorkflow updates an existing workflow by its ID
+	UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error)
+	// DeleteWorkflow deletes a workflow by its ID
+	DeleteWorkflow(id string) error
 }
 
 // Ensure Client implements ClientInterface

@@ -21,6 +21,19 @@ type FakeClientInterface struct {
 		result1 *n8n.Workflow
 		result2 error
 	}
+	CreateWorkflowStub        func(*n8n.Workflow) (*n8n.Workflow, error)
+	createWorkflowMutex       sync.RWMutex
+	createWorkflowArgsForCall []struct {
+		arg1 *n8n.Workflow
+	}
+	createWorkflowReturns struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	createWorkflowReturnsOnCall map[int]struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
 	DeactivateWorkflowStub        func(string) (*n8n.Workflow, error)
 	deactivateWorkflowMutex       sync.RWMutex
 	deactivateWorkflowArgsForCall []struct {
@@ -34,6 +47,17 @@ type FakeClientInterface struct {
 		result1 *n8n.Workflow
 		result2 error
 	}
+	DeleteWorkflowStub        func(string) error
+	deleteWorkflowMutex       sync.RWMutex
+	deleteWorkflowArgsForCall []struct {
+		arg1 string
+	}
+	deleteWorkflowReturns struct {
+		result1 error
+	}
+	deleteWorkflowReturnsOnCall map[int]struct {
+		result1 error
+	}
 	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
@@ -44,6 +68,20 @@ type FakeClientInterface struct {
 	}
 	getWorkflowsReturnsOnCall map[int]struct {
 		result1 *n8n.WorkflowList
+		result2 error
+	}
+	UpdateWorkflowStub        func(string, *n8n.Workflow) (*n8n.Workflow, error)
+	updateWorkflowMutex       sync.RWMutex
+	updateWorkflowArgsForCall []struct {
+		arg1 string
+		arg2 *n8n.Workflow
+	}
+	updateWorkflowReturns struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	updateWorkflowReturnsOnCall map[int]struct {
+		result1 *n8n.Workflow
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -114,6 +152,70 @@ func (fake *FakeClientInterface) ActivateWorkflowReturnsOnCall(i int, result1 *n
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) CreateWorkflow(arg1 *n8n.Workflow) (*n8n.Workflow, error) {
+	fake.createWorkflowMutex.Lock()
+	ret, specificReturn := fake.createWorkflowReturnsOnCall[len(fake.createWorkflowArgsForCall)]
+	fake.createWorkflowArgsForCall = append(fake.createWorkflowArgsForCall, struct {
+		arg1 *n8n.Workflow
+	}{arg1})
+	stub := fake.CreateWorkflowStub
+	fakeReturns := fake.createWorkflowReturns
+	fake.recordInvocation("CreateWorkflow", []interface{}{arg1})
+	fake.createWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) CreateWorkflowCallCount() int {
+	fake.createWorkflowMutex.RLock()
+	defer fake.createWorkflowMutex.RUnlock()
+	return len(fake.createWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) CreateWorkflowCalls(stub func(*n8n.Workflow) (*n8n.Workflow, error)) {
+	fake.createWorkflowMutex.Lock()
+	defer fake.createWorkflowMutex.Unlock()
+	fake.CreateWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) CreateWorkflowArgsForCall(i int) *n8n.Workflow {
+	fake.createWorkflowMutex.RLock()
+	defer fake.createWorkflowMutex.RUnlock()
+	argsForCall := fake.createWorkflowArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) CreateWorkflowReturns(result1 *n8n.Workflow, result2 error) {
+	fake.createWorkflowMutex.Lock()
+	defer fake.createWorkflowMutex.Unlock()
+	fake.CreateWorkflowStub = nil
+	fake.createWorkflowReturns = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) CreateWorkflowReturnsOnCall(i int, result1 *n8n.Workflow, result2 error) {
+	fake.createWorkflowMutex.Lock()
+	defer fake.createWorkflowMutex.Unlock()
+	fake.CreateWorkflowStub = nil
+	if fake.createWorkflowReturnsOnCall == nil {
+		fake.createWorkflowReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Workflow
+			result2 error
+		})
+	}
+	fake.createWorkflowReturnsOnCall[i] = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) DeactivateWorkflow(arg1 string) (*n8n.Workflow, error) {
 	fake.deactivateWorkflowMutex.Lock()
 	ret, specificReturn := fake.deactivateWorkflowReturnsOnCall[len(fake.deactivateWorkflowArgsForCall)]
@@ -178,6 +280,67 @@ func (fake *FakeClientInterface) DeactivateWorkflowReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) DeleteWorkflow(arg1 string) error {
+	fake.deleteWorkflowMutex.Lock()
+	ret, specificReturn := fake.deleteWorkflowReturnsOnCall[len(fake.deleteWorkflowArgsForCall)]
+	fake.deleteWorkflowArgsForCall = append(fake.deleteWorkflowArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.DeleteWorkflowStub
+	fakeReturns := fake.deleteWorkflowReturns
+	fake.recordInvocation("DeleteWorkflow", []interface{}{arg1})
+	fake.deleteWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeClientInterface) DeleteWorkflowCallCount() int {
+	fake.deleteWorkflowMutex.RLock()
+	defer fake.deleteWorkflowMutex.RUnlock()
+	return len(fake.deleteWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) DeleteWorkflowCalls(stub func(string) error) {
+	fake.deleteWorkflowMutex.Lock()
+	defer fake.deleteWorkflowMutex.Unlock()
+	fake.DeleteWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) DeleteWorkflowArgsForCall(i int) string {
+	fake.deleteWorkflowMutex.RLock()
+	defer fake.deleteWorkflowMutex.RUnlock()
+	argsForCall := fake.deleteWorkflowArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) DeleteWorkflowReturns(result1 error) {
+	fake.deleteWorkflowMutex.Lock()
+	defer fake.deleteWorkflowMutex.Unlock()
+	fake.DeleteWorkflowStub = nil
+	fake.deleteWorkflowReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeClientInterface) DeleteWorkflowReturnsOnCall(i int, result1 error) {
+	fake.deleteWorkflowMutex.Lock()
+	defer fake.deleteWorkflowMutex.Unlock()
+	fake.DeleteWorkflowStub = nil
+	if fake.deleteWorkflowReturnsOnCall == nil {
+		fake.deleteWorkflowReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteWorkflowReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
@@ -234,15 +397,86 @@ func (fake *FakeClientInterface) GetWorkflowsReturnsOnCall(i int, result1 *n8n.W
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) UpdateWorkflow(arg1 string, arg2 *n8n.Workflow) (*n8n.Workflow, error) {
+	fake.updateWorkflowMutex.Lock()
+	ret, specificReturn := fake.updateWorkflowReturnsOnCall[len(fake.updateWorkflowArgsForCall)]
+	fake.updateWorkflowArgsForCall = append(fake.updateWorkflowArgsForCall, struct {
+		arg1 string
+		arg2 *n8n.Workflow
+	}{arg1, arg2})
+	stub := fake.UpdateWorkflowStub
+	fakeReturns := fake.updateWorkflowReturns
+	fake.recordInvocation("UpdateWorkflow", []interface{}{arg1, arg2})
+	fake.updateWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowCallCount() int {
+	fake.updateWorkflowMutex.RLock()
+	defer fake.updateWorkflowMutex.RUnlock()
+	return len(fake.updateWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowCalls(stub func(string, *n8n.Workflow) (*n8n.Workflow, error)) {
+	fake.updateWorkflowMutex.Lock()
+	defer fake.updateWorkflowMutex.Unlock()
+	fake.UpdateWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowArgsForCall(i int) (string, *n8n.Workflow) {
+	fake.updateWorkflowMutex.RLock()
+	defer fake.updateWorkflowMutex.RUnlock()
+	argsForCall := fake.updateWorkflowArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowReturns(result1 *n8n.Workflow, result2 error) {
+	fake.updateWorkflowMutex.Lock()
+	defer fake.updateWorkflowMutex.Unlock()
+	fake.UpdateWorkflowStub = nil
+	fake.updateWorkflowReturns = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowReturnsOnCall(i int, result1 *n8n.Workflow, result2 error) {
+	fake.updateWorkflowMutex.Lock()
+	defer fake.updateWorkflowMutex.Unlock()
+	fake.UpdateWorkflowStub = nil
+	if fake.updateWorkflowReturnsOnCall == nil {
+		fake.updateWorkflowReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Workflow
+			result2 error
+		})
+	}
+	fake.updateWorkflowReturnsOnCall[i] = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.activateWorkflowMutex.RLock()
 	defer fake.activateWorkflowMutex.RUnlock()
+	fake.createWorkflowMutex.RLock()
+	defer fake.createWorkflowMutex.RUnlock()
 	fake.deactivateWorkflowMutex.RLock()
 	defer fake.deactivateWorkflowMutex.RUnlock()
+	fake.deleteWorkflowMutex.RLock()
+	defer fake.deleteWorkflowMutex.RUnlock()
 	fake.getWorkflowsMutex.RLock()
 	defer fake.getWorkflowsMutex.RUnlock()
+	fake.updateWorkflowMutex.RLock()
+	defer fake.updateWorkflowMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

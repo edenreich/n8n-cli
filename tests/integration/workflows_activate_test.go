@@ -11,8 +11,9 @@ import (
 	"testing"
 
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
-	"github.com/edenreich/n8n-cli/config/configfakes"
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/edenreich/n8n-cli/n8n"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,18 +69,13 @@ func setupActivateWorkflowTest(t *testing.T) (*httptest.Server, map[string]*n8n.
 		_, _ = fmt.Fprint(w, `{"error": "Not found"}`)
 	}))
 
-	fakeConfig := &configfakes.FakeConfigInterface{}
-	fakeConfig.GetAPITokenReturns("test-api-key")
-	fakeConfig.GetAPIBaseURLReturns(mockServer.URL + "/api/v1")
-
-	origGetConfigProvider := rootcmd.GetConfigProvider
-	rootcmd.GetConfigProvider = func() (rootcmd.ConfigProvider, error) {
-		return fakeConfig, nil
-	}
+	viper.Reset()
+	viper.Set("api_key", "test-api-key")
+	viper.Set("instance_url", mockServer.URL)
+	config.Initialize()
 
 	cleanup := func() {
 		mockServer.Close()
-		rootcmd.GetConfigProvider = origGetConfigProvider
 	}
 
 	return mockServer, mockWorkflows, cleanup
@@ -159,17 +155,10 @@ func TestActivateWorkflowWithAuthError(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	fakeConfig := &configfakes.FakeConfigInterface{}
-	fakeConfig.GetAPITokenReturns("wrong-api-key")
-	fakeConfig.GetAPIBaseURLReturns(mockServer.URL + "/api/v1")
-
-	origGetConfigProvider := rootcmd.GetConfigProvider
-	rootcmd.GetConfigProvider = func() (rootcmd.ConfigProvider, error) {
-		return fakeConfig, nil
-	}
-	defer func() {
-		rootcmd.GetConfigProvider = origGetConfigProvider
-	}()
+	viper.Reset()
+	viper.Set("api_key", "wrong-api-key")
+	viper.Set("instance_url", mockServer.URL)
+	config.Initialize()
 
 	rootCmd := rootcmd.GetRootCmd()
 	rootCmd.SetArgs([]string{"workflows", "activate", "123"})

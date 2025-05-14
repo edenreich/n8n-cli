@@ -10,8 +10,9 @@ import (
 	"testing"
 
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
-	"github.com/edenreich/n8n-cli/config/configfakes"
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/edenreich/n8n-cli/n8n"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,18 +68,14 @@ func setupDeactivateWorkflowTest(t *testing.T) (*httptest.Server, map[string]*n8
 		_, _ = fmt.Fprint(w, `{"error": "Not found"}`)
 	}))
 
-	fakeConfig := &configfakes.FakeConfigInterface{}
-	fakeConfig.GetAPITokenReturns("test-api-key")
-	fakeConfig.GetAPIBaseURLReturns(mockServer.URL + "/api/v1")
-
-	origGetConfigProvider := rootcmd.GetConfigProvider
-	rootcmd.GetConfigProvider = func() (rootcmd.ConfigProvider, error) {
-		return fakeConfig, nil
-	}
+	viper.Reset()
+	viper.Set("api_key", "test-api-key")
+	viper.Set("instance_url", mockServer.URL)
+	config.Initialize()
 
 	cleanup := func() {
 		mockServer.Close()
-		rootcmd.GetConfigProvider = origGetConfigProvider
+		viper.Reset()
 	}
 
 	return mockServer, mockWorkflows, cleanup

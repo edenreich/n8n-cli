@@ -67,7 +67,7 @@ func GetRootCmd() *cobra.Command {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(config.Initialize)
 
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "n8n API Key (env: N8N_API_KEY)")
 	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
@@ -80,33 +80,4 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
 	}
 	rootCmd.Flags().BoolP("verbose", "V", false, "Show detailed output during synchronization")
-}
-
-// initConfig reads in config file and ENV variables if set
-func initConfig() {
-	config.LoadEnvFile()
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME/.n8n")
-	viper.AddConfigPath(".")
-
-	viper.SetEnvPrefix("N8N")
-	viper.AutomaticEnv()
-
-	if err := viper.BindEnv("api_key", "N8N_API_KEY"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error binding environment variable: %v\n", err)
-	}
-	if err := viper.BindEnv("instance_url", "N8N_INSTANCE_URL"); err != nil {
-		fmt.Fprintf(os.Stderr, "Error binding environment variable: %v\n", err)
-	}
-
-	viper.SetDefault("instance_url", "http://localhost:5678")
-	viper.SetDefault("api_key", "")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Fprintf(os.Stderr, "Warning: Config file error: %v\n", err)
-		}
-	}
 }

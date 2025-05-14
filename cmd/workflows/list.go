@@ -30,6 +30,7 @@ import (
 	rootcmd "github.com/edenreich/n8n-cli/cmd"
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,6 +51,7 @@ var ListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List JSON workflows in n8n instance",
 	Long:  `List command fetches and lists JSON workflows from a specified n8n instance.`,
+	Args:  cobra.ExactArgs(0),
 	RunE:  listWorkflows,
 }
 
@@ -117,12 +119,10 @@ func printWorkflowYAML(cmd *cobra.Command, workflows []n8n.Workflow) error {
 
 // listWorkflows fetches and lists workflows from the n8n instance
 func listWorkflows(cmd *cobra.Command, args []string) error {
-	cfg, err := rootcmd.GetConfigProvider()
-	if err != nil {
-		return err
-	}
+	apiKey := viper.Get("api_key").(string)
+	instanceURL := viper.Get("instance_url").(string)
 
-	client := n8n.NewClient(cfg.GetAPIBaseURL(), cfg.GetAPIToken())
+	client := n8n.NewClient(instanceURL, apiKey)
 
 	workflowList, err := client.GetWorkflows()
 	if err != nil {
