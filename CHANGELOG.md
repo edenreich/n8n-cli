@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6](https://github.com/edenreich/n8n-cli/compare/v0.2.5...v0.2.6) (2025-05-15)
+
+### 🐛 Bug Fixes
+
+* **dotenv:** Fix dotenv is not loading from the current working directory ([#11](https://github.com/edenreich/n8n-cli/issues/11)) ([ad40abd](https://github.com/edenreich/n8n-cli/commit/ad40abd467059fe97174296e4f72d34e6505ba65))
+
+### 📚 Documentation
+
+* **README:** Fix punctuation in installation instructions for clarity ([a2268f2](https://github.com/edenreich/n8n-cli/commit/a2268f2d093b6b997d1f4461dc182c6440084285))
+* **README:** Improve formatting for installation instructions ([b6b9594](https://github.com/edenreich/n8n-cli/commit/b6b95944f5eb6ca9bbb05f24c894db7b1c6b507f))
+
+### 🔧 Miscellaneous
+
+* **install:** Add version specification option to installation script ([8fc4150](https://github.com/edenreich/n8n-cli/commit/8fc4150a4c59facb3da27502ee9bd9405ab44b7e))
+* **todos:** Update workflow management checklist for accuracy ([34bb51f](https://github.com/edenreich/n8n-cli/commit/34bb51f4569c993733564796f018a6874579cb4d))
+
 ## [0.2.6-rc.1](https://github.com/edenreich/n8n-cli/compare/v0.2.5...v0.2.6-rc.1) (2025-05-15)
 
 ### 🐛 Bug Fixes
