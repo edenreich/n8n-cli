@@ -104,12 +104,8 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 
 	localFiles := make(map[string]string)
 
-	if !dryRun || overwrite {
-		files, err := os.ReadDir(directory)
-		if err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("error reading directory: %w", err)
-		}
-
+	files, err := os.ReadDir(directory)
+	if err == nil {
 		for _, file := range files {
 			if !file.IsDir() {
 				ext := strings.ToLower(filepath.Ext(file.Name()))
@@ -121,6 +117,8 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 				}
 			}
 		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("error reading directory: %w", err)
 	}
 
 	for _, workflow := range *workflowList.Data {
@@ -160,21 +158,18 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 			action = "Creating"
 		}
 
-		if dryRun {
-			cmd.Printf("Would %s workflow '%s' (ID: %s) to file: %s\n",
-				strings.ToLower(action), workflow.Name, *workflow.Id, filePath)
-			continue
-		}
-
 		var content []byte
 		var err error
 
 		switch strings.ToLower(filepath.Ext(filePath)) {
 		case ".yaml", ".yml":
-			content, err = yaml.Marshal(workflow)
-			if err != nil {
+			var buf strings.Builder
+			encoder := yaml.NewEncoder(&buf)
+			encoder.SetIndent(2)
+			if err := encoder.Encode(workflow); err != nil {
 				return fmt.Errorf("error serializing workflow '%s' to YAML: %w", workflow.Name, err)
 			}
+			content = []byte(buf.String())
 		default:
 			content, err = json.MarshalIndent(workflow, "", "  ")
 			if err != nil {
@@ -196,6 +191,17 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 		if !needsUpdate && action == "Updating" {
 			cmd.Printf("No changes for workflow '%s' (ID: %s) in file: %s\n",
 				workflow.Name, *workflow.Id, filePath)
+			continue
+		}
+
+		if dryRun {
+			if needsUpdate || action == "Creating" || action == "Converting" {
+				cmd.Printf("Would %s workflow '%s' (ID: %s) to file: %s\n",
+					strings.ToLower(action), workflow.Name, *workflow.Id, filePath)
+			} else {
+				cmd.Printf("No changes needed for workflow '%s' (ID: %s) in file: %s\n",
+					workflow.Name, *workflow.Id, filePath)
+			}
 			continue
 		}
 
