@@ -208,7 +208,7 @@ func TestRefreshCommand(t *testing.T) {
 						continue
 					}
 
-					files, err := os.ReadDir(directory) // Use the directory from the test case
+					files, err := os.ReadDir(directory)
 					require.NoError(t, err)
 
 					found := false

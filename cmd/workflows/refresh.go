@@ -183,7 +183,19 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 			if _, fileErr := os.Stat(filePath); fileErr == nil {
 				existingContent, readErr := os.ReadFile(filePath)
 				if readErr == nil {
-					needsUpdate = string(existingContent) != string(content)
+					ext := strings.ToLower(filepath.Ext(filePath))
+					if ext == ".yaml" || ext == ".yml" {
+						var existingWorkflow, newWorkflow n8n.Workflow
+						if yamlErr := yaml.Unmarshal(existingContent, &existingWorkflow); yamlErr == nil {
+							if yamlErr := yaml.Unmarshal(content, &newWorkflow); yamlErr == nil {
+								existingJSON, _ := json.Marshal(existingWorkflow)
+								newJSON, _ := json.Marshal(newWorkflow)
+								needsUpdate = string(existingJSON) != string(newJSON)
+							}
+						}
+					} else {
+						needsUpdate = string(existingContent) != string(content)
+					}
 				}
 			}
 		}
