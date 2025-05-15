@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/edenreich/n8n-cli/cmd/workflows"
@@ -30,6 +31,7 @@ func TestRefreshCommand(t *testing.T) {
 		expectedOutput string
 		expectError    bool
 		setupFiles     func(t *testing.T, dir string)
+		validateFiles  func(t *testing.T, dir string)
 	}{
 		{
 			name: "Successfully refreshes workflows (JSON format)",
@@ -72,6 +74,30 @@ func TestRefreshCommand(t *testing.T) {
 			mockError:      nil,
 			expectedOutput: "Creating workflow 'Test Workflow 3'",
 			expectError:    false,
+		},
+		{
+			name: "Verify YAML files have separator",
+			args: []string{"--directory", tempDir, "--output", "yaml"},
+			mockResponses: &n8n.WorkflowList{
+				Data: &[]n8n.Workflow{
+					{
+						Id:     stringPtr("yaml-separator"),
+						Name:   "YAML Separator Test",
+						Active: boolPtr(true),
+					},
+				},
+			},
+			mockError:      nil,
+			expectedOutput: "Creating workflow 'YAML Separator Test'",
+			expectError:    false,
+			validateFiles: func(t *testing.T, dir string) {
+				filePath := filepath.Join(dir, "YAML_Separator_Test.yaml")
+				content, err := os.ReadFile(filePath)
+				require.NoError(t, err)
+
+				assert.True(t, bytes.HasPrefix(content, []byte("---\n")),
+					"YAML file should start with '---' separator")
+			},
 		},
 		{
 			name: "Detects no changes when content is identical (JSON)",
@@ -121,9 +147,12 @@ func TestRefreshCommand(t *testing.T) {
 					Name:   "Test Workflow 3",
 					Active: boolPtr(true),
 				}
+				var buf strings.Builder
+				buf.WriteString("---\n")
 				content, err := yaml.Marshal(workflow)
 				require.NoError(t, err)
-				err = os.WriteFile(filepath.Join(dir, "Test_Workflow_3.yaml"), content, 0644)
+				buf.Write(content)
+				err = os.WriteFile(filepath.Join(dir, "Test_Workflow_3.yaml"), []byte(buf.String()), 0644)
 				require.NoError(t, err)
 			},
 		},
@@ -142,6 +171,70 @@ func TestRefreshCommand(t *testing.T) {
 			mockError:      nil,
 			expectedOutput: "No workflows found in n8n instance",
 			expectError:    false,
+		},
+		{
+			name: "Excludes createdAt and updatedAt fields",
+			args: []string{"--directory", tempDir},
+			mockResponses: &n8n.WorkflowList{
+				Data: &[]n8n.Workflow{
+					{
+						Id:        stringPtr("abc123"),
+						Name:      "Workflow With Timestamps",
+						Active:    boolPtr(true),
+						CreatedAt: timePtr("2025-05-11T18:58:01.685Z"),
+						UpdatedAt: timePtr("2025-05-14T23:48:45.83Z"),
+					},
+				},
+			},
+			mockError:      nil,
+			expectedOutput: "Creating workflow 'Workflow With Timestamps'",
+			expectError:    false,
+			validateFiles: func(t *testing.T, dir string) {
+				filePath := filepath.Join(dir, "Workflow_With_Timestamps.json")
+				content, err := os.ReadFile(filePath)
+				require.NoError(t, err)
+
+				var workflow map[string]interface{}
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				_, hasCreatedAt := workflow["createdAt"]
+				_, hasUpdatedAt := workflow["updatedAt"]
+				assert.False(t, hasCreatedAt, "createdAt should be excluded from the workflow")
+				assert.False(t, hasUpdatedAt, "updatedAt should be excluded from the workflow")
+			},
+		},
+		{
+			name: "Excludes createdAt and updatedAt fields",
+			args: []string{"--directory", tempDir},
+			mockResponses: &n8n.WorkflowList{
+				Data: &[]n8n.Workflow{
+					{
+						Id:        stringPtr("abc123"),
+						Name:      "Workflow With Timestamps",
+						Active:    boolPtr(true),
+						CreatedAt: timePtr("2025-05-11T18:58:01.685Z"),
+						UpdatedAt: timePtr("2025-05-14T23:48:45.83Z"),
+					},
+				},
+			},
+			mockError:      nil,
+			expectedOutput: "Creating workflow 'Workflow With Timestamps'",
+			expectError:    false,
+			validateFiles: func(t *testing.T, dir string) {
+				filePath := filepath.Join(dir, "Workflow_With_Timestamps.json")
+				content, err := os.ReadFile(filePath)
+				require.NoError(t, err)
+
+				var workflow map[string]interface{}
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				_, hasCreatedAt := workflow["createdAt"]
+				_, hasUpdatedAt := workflow["updatedAt"]
+				assert.False(t, hasCreatedAt, "createdAt should be excluded from the workflow")
+				assert.False(t, hasUpdatedAt, "updatedAt should be excluded from the workflow")
+			},
 		},
 	}
 
@@ -169,6 +262,7 @@ func TestRefreshCommand(t *testing.T) {
 			cmd.Flags().Bool("dry-run", false, "Dry run")
 			cmd.Flags().Bool("overwrite", false, "Overwrite")
 			cmd.Flags().StringP("output", "o", "json", "Output format")
+			cmd.Flags().Bool("minimal", true, "Minimal output")
 			cmd.SetOut(outBuf)
 			cmd.SetErr(errBuf)
 
@@ -191,8 +285,9 @@ func TestRefreshCommand(t *testing.T) {
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			overwrite, _ := cmd.Flags().GetBool("overwrite")
 			output, _ := cmd.Flags().GetString("output")
+			minimal, _ := cmd.Flags().GetBool("minimal")
 
-			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output)
+			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output, minimal)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -235,6 +330,11 @@ func TestRefreshCommand(t *testing.T) {
 
 					require.True(t, found, "Workflow file should have been created with %s extension", expectedExt)
 				}
+			}
+
+			// Run validation function if provided
+			if tc.validateFiles != nil {
+				tc.validateFiles(t, directory)
 			}
 		})
 	}
