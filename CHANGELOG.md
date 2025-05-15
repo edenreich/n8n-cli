@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/edenreich/n8n-cli/compare/v0.2.0...v0.2.1) (2025-05-15)
+
+### 🐛 Bug Fixes
+
+* Add Version Constants to Config and Fix LDFLAGS metadata ([#7](https://github.com/edenreich/n8n-cli/issues/7)) ([cc7f65d](https://github.com/edenreich/n8n-cli/commit/cc7f65ddf02eb05c96ce06410897fca772dd2b37))
+
 ## [0.2.0](https://github.com/edenreich/n8n-cli/compare/v0.1.4...v0.2.0) (2025-05-15)
 
 ### ✨ Features
