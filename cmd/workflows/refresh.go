@@ -179,7 +179,7 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 
 		needsUpdate := true
 		if existingPath, exists := localFiles[*workflow.Id]; exists &&
-			strings.ToLower(filepath.Ext(existingPath)) == strings.ToLower(filepath.Ext(filePath)) {
+			strings.EqualFold(filepath.Ext(existingPath), filepath.Ext(filePath)) {
 			if _, fileErr := os.Stat(filePath); fileErr == nil {
 				existingContent, readErr := os.ReadFile(filePath)
 				if readErr == nil {
