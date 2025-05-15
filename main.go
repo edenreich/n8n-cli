@@ -23,15 +23,9 @@ package main
 
 import (
 	"github.com/edenreich/n8n-cli/cmd"
-	"github.com/edenreich/n8n-cli/config"
+	_ "github.com/edenreich/n8n-cli/cmd/workflows"
 )
 
 func main() {
-	// Initialize configuration during startup
-	// Note: We don't enforce config loading here because some commands
-	// like version don't need the n8n configuration
-	// Each command that needs the config will load it when needed
-	_ = config.InitConfig()
-
 	cmd.Execute()
 }

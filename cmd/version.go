@@ -47,6 +47,11 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+// GetVersionCmd returns the version command for testing purposes
+func GetVersionCmd() *cobra.Command {
+	return versionCmd
+}
+
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	GetRootCmd().AddCommand(versionCmd)
 }

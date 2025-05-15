@@ -25,14 +25,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "n8n-cli",
-	Short: "Command line interface for managing n8n workflows",
-	Long: `n8n-cli is a command line tool for managing n8n automation workflows.
+	Short: "Command line interface for managing n8n instances",
+	Long: `n8n-cli is a command line tool for managing n8n instances.
 
 It allows you to synchronize JSON workflows between your local filesystem and n8n instances,
 import workflows from n8n instances to your local directory, and manage your workflows 
@@ -45,7 +47,6 @@ through version control systems.`,
 			return nil
 		}
 
-		// Print help to stdout so it can be captured in tests
 		cmd.SetOut(cmd.OutOrStdout())
 		return cmd.Help()
 	},
@@ -66,5 +67,17 @@ func GetRootCmd() *cobra.Command {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("version", "v", false, "Display the version information")
+	cobra.OnInitialize(config.Initialize)
+
+	rootCmd.PersistentFlags().StringP("api-key", "k", "", "n8n API Key (env: N8N_API_KEY)")
+	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
+	rootCmd.Flags().Bool("version", false, "Display the version information")
+
+	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding api-key flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
+	}
+	rootCmd.Flags().BoolP("verbose", "V", false, "Show detailed output during synchronization")
 }

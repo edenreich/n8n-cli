@@ -2,3 +2,5 @@
 install.sh linguist-vendored=true
 
 n8n/generated_types.go linguist-generated=true
+config/configfakes/** linguist-generated=true
+n8n/clientfakes/** linguist-generated=true

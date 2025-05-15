@@ -18,7 +18,7 @@
   </a>
 </p>
 
-<p align="center">Command line interface for managing n8n workflows.</p>
+<p align="center">Command line interface for managing n8n instances.</p>
 
 ## Table of Contents
 
@@ -28,9 +28,8 @@
   - [Manual Installation with Go](#manual-installation-with-go)
 - [Configuration](#configuration)
 - [Commands](#commands)
+  - [List](#list)
   - [Sync](#sync)
-  - [Import](#import)
-- [Workflow File Structure](#workflow-file-structure)
 
 ## Installation
 
@@ -83,17 +82,45 @@ n8n-cli -v
 n8n-cli version
 ```
 
+### List
+
+List workflows from an n8n instance:
+
+```bash
+n8n-cli workflows list
+```
+
+Options:
+
+- `--output, -o`: Output format (default: "table"). Supported formats:
+  - `table`: Human-readable tabular format
+  - `json`: JSON format for programmatic use
+  - `yaml`: YAML format for configuration files
+
+Example:
+
+```bash
+# List workflows in default table format
+n8n-cli workflows list
+
+# List workflows in JSON format
+n8n-cli workflows list --output json
+
+# List workflows in YAML format
+n8n-cli workflows list --output yaml
+```
+
 ### Sync
 
 Synchronize JSON workflows from a local directory to an n8n instance:
 
 ```bash
-n8n-cli sync --directory hack/workflows
+n8n-cli workflows sync --directory workflows/
 ```
 
 Options:
 
-- `--directory, -d`: Directory containing workflow JSON files (default: "hack/workflows")
+- `--directory, -d`: Directory containing workflow JSON files (default: "workflows/")
 - `--activate-all, -a`: Activate all workflows after synchronization
 - `--dry-run, -n`: Show what would be done without making changes
 - `--verbose, -v`: Show detailed output during synchronization
@@ -111,45 +138,34 @@ Example:
 
 ```bash
 # Sync all workflows and activate them
-n8n-cli sync --activate-all
+n8n-cli workflows sync --activate-all
 
 # Test without making changes
-n8n-cli sync --dry-run
+n8n-cli workflows sync --dry-run
 ```
 
-### Import
+## Development
 
-Import workflows from an n8n instance to local JSON files:
+### Available Tasks
+
+The project uses [Taskfile](https://taskfile.dev) for automating common development operations:
 
 ```bash
-n8n-cli import --directory hack/workflows
+# Run unit tests
+task test-unit
+
+# Run integration tests
+task test-integration
+
+# Run all tests
+task test-all
+
+# Run linting
+task lint
+
+# Build the CLI
+task build
+
+# Run the CLI during development (args are passed to the CLI)
+task cli -- workflows list
 ```
-
-Options:
-
-- `--directory, -d`: Directory to save workflow JSON files (default: "hack/workflows")
-- `--workflow-id, -w`: ID of a specific workflow to import
-- `--all, -a`: Import all workflows (default if no workflow-id is specified)
-- `--dry-run, -n`: Show what would be done without making changes
-- `--verbose, -v`: Show detailed output during import
-
-Example:
-
-```bash
-# Import all workflows from n8n
-n8n-cli import
-
-# Import a specific workflow by ID
-n8n-cli import --workflow-id 123
-
-# Test without making changes
-n8n-cli import --dry-run
-```
-
-## Workflow File Structure
-
-Workflow files should be valid n8n workflow JSON files. The sync command will:
-
-1. Create new workflows for files without an ID or with an ID that doesn't exist on the n8n instance
-2. Update existing workflows that have a matching ID
-3. Activate workflows based on the "active" property in the JSON file or if --activate-all is used

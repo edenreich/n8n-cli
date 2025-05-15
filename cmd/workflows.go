@@ -22,52 +22,25 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
+	"github.com/spf13/cobra"
 )
 
-// getServerWorkflows fetches all workflows from the n8n server
-func getServerWorkflows(apiBaseURL, apiToken string) ([]map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/workflows", apiBaseURL)
+// workflowsCmd represents the workflows command
+var workflowsCmd = &cobra.Command{
+	Use:   "workflows",
+	Short: "Manage n8n workflows",
+	Long: `The workflows command provides utilities to import, export, list, and 
+synchronize n8n workflows between your local filesystem and n8n instances.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
+}
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %v", err)
-	}
+func init() {
+	rootCmd.AddCommand(workflowsCmd)
+}
 
-	req.Header.Set("X-N8N-API-KEY", apiToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %v", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error closing response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	var response struct {
-		Data []map[string]interface{} `json:"data"`
-	}
-
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON response: %v", err)
-	}
-
-	return response.Data, nil
+// GetWorkflowsCmd returns the workflows command for other packages
+func GetWorkflowsCmd() *cobra.Command {
+	return workflowsCmd
 }
