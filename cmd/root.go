@@ -32,9 +32,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "n8n-cli",
+	Use:   "n8n",
 	Short: "Command line interface for managing n8n instances",
-	Long: `n8n-cli is a command line tool for managing n8n instances.
+	Long: `n8n is a command line tool for managing n8n instances.
 
 It allows you to synchronize JSON workflows between your local filesystem and n8n instances,
 import workflows from n8n instances to your local directory, and manage your workflows 

@@ -82,18 +82,18 @@ do_install() {
   
   prepare_install_dir
   
-  info "Installing n8n-cli $VERSION for $OS/$ARCH to $INSTALL_DIR..."
+  info "Installing n8n $VERSION for $OS/$ARCH to $INSTALL_DIR..."
   
   VERSION_NUM=$(echo "$VERSION" | sed 's/^v//')
   
-  BINARY="n8n-cli"
+  BINARY="n8n"
   
-  DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$VERSION/n8n-cli_${OS}_${ARCH}"
+  DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$VERSION/n8n_${OS}_${ARCH}"
   
   info "Downloading from $DOWNLOAD_URL"
 
   if ! curl -sL "$DOWNLOAD_URL" -o "$INSTALL_DIR/$BINARY"; then
-    error "Failed to download n8n-cli"
+    error "Failed to download n8n"
   fi
   
   success "Download complete"
@@ -108,12 +108,12 @@ do_install() {
 /_/ /_/\\____/_/ /_/ CLI
 \033[0m"
   echo "\033[1;32m================================\033[0m"
-  echo "\033[1;32m✓ Successfully installed n8n-cli!\033[0m"
+  echo "\033[1;32m✓ Successfully installed n8n!\033[0m"
   echo "\033[1;32m================================\033[0m"
-  info "n8n-cli has been installed to $INSTALL_DIR/$BINARY"
+  info "n8n has been installed to $INSTALL_DIR/$BINARY"
 
   if command_exists "$BINARY"; then
-    info "Run 'n8n-cli --help' to get started"
+    info "Run 'n8n --help' to get started"
   else
     if [ -x "$INSTALL_DIR/$BINARY" ]; then
       info "Run '$INSTALL_DIR/$BINARY --help' to get started"
@@ -137,7 +137,7 @@ do_install() {
             ;;
         esac
         
-        echo "\033[1;36m➡️  To use n8n-cli from anywhere, add it to your PATH:\033[0m"
+        echo "\033[1;36m➡️  To use n8n from anywhere, add it to your PATH:\033[0m"
         case "$SHELL_NAME" in
           fish)
             echo "   \033[1m echo 'set -x PATH \$PATH $INSTALL_DIR' >> $SHELL_CONFIG\033[0m"

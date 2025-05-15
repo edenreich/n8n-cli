@@ -87,7 +87,7 @@ n8n-cli version
 List workflows from an n8n instance:
 
 ```bash
-n8n-cli workflows list
+n8n workflows list
 ```
 
 Options:
@@ -101,13 +101,13 @@ Example:
 
 ```bash
 # List workflows in default table format
-n8n-cli workflows list
+n8n workflows list
 
 # List workflows in JSON format
-n8n-cli workflows list --output json
+n8n workflows list --output json
 
 # List workflows in YAML format
-n8n-cli workflows list --output yaml
+n8n workflows list --output yaml
 ```
 
 ### Sync
@@ -115,7 +115,7 @@ n8n-cli workflows list --output yaml
 Synchronize JSON workflows from a local directory to an n8n instance:
 
 ```bash
-n8n-cli workflows sync --directory workflows/
+n8n workflows sync --directory workflows/
 ```
 
 Options:
@@ -138,10 +138,10 @@ Example:
 
 ```bash
 # Sync all workflows and activate them
-n8n-cli workflows sync --activate-all
+n8n workflows sync --activate-all
 
 # Test without making changes
-n8n-cli workflows sync --dry-run
+n8n workflows sync --dry-run
 ```
 
 ## Development
