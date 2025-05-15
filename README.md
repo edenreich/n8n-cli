@@ -152,6 +152,7 @@ Options:
 - `--dry-run`: Show what would be updated without making changes
 - `--overwrite`: Overwrite existing files even if they have a different name
 - `--output, -o`: Output format for new workflow files (json or yaml)
+- `--minimal`: Minimize workflow files by removing null and optional fields (default: true).
 
 Example:
 
@@ -164,6 +165,9 @@ n8n workflows refresh --directory workflows/ --dry-run
 
 # Refresh workflows and save them as YAML files
 n8n workflows refresh --directory workflows/ --output yaml
+
+# Refresh workflows without minimizing the JSON/YAML output
+n8n workflows refresh --directory workflows/ --minimal=false
 ```
 
 #### Sync
