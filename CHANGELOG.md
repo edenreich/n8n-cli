@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5](https://github.com/edenreich/n8n-cli/compare/v0.2.4...v0.2.5) (2025-05-15)
+
+### 🐛 Bug Fixes
+
+* **tests:** Correct version command output format for consistency ([39baa38](https://github.com/edenreich/n8n-cli/commit/39baa38e42393c29fa8365f49a10594b21128b27))
+
 ## [0.2.4](https://github.com/edenreich/n8n-cli/compare/v0.2.3...v0.2.4) (2025-05-15)
 
 ### 🐛 Bug Fixes
