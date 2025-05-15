@@ -161,19 +161,26 @@ func (c *Client) CreateWorkflow(workflow *Workflow) (*Workflow, error) {
 		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
 	}
 
-	var result Workflow
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var w Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&w); err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &w, nil
 }
 
 // UpdateWorkflow updates an existing workflow by its ID
 func (c *Client) UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error) {
 	url := fmt.Sprintf("%s/workflows/%s", c.baseURL, id)
 
-	body, err := json.Marshal(workflow)
+	workflowCopy := *workflow
+	workflowCopy.Id = nil
+	workflowCopy.Active = nil
+	workflowCopy.CreatedAt = nil
+	workflowCopy.UpdatedAt = nil
+	workflowCopy.Tags = nil
+
+	body, err := json.Marshal(workflowCopy)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling workflow: %w", err)
 	}
@@ -201,12 +208,12 @@ func (c *Client) UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error
 		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
 	}
 
-	var result Workflow
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var w Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&w); err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &w, nil
 }
 
 // DeleteWorkflow deletes a workflow by ID

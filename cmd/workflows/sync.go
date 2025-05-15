@@ -53,11 +53,13 @@ The command will:
    - If the workflow ID exists and is found on the n8n instance, it will update it
    - If the workflow doesn't exist or has no ID, it will create a new workflow
    - If the workflow has "active": true in its definition, it will be activated automatically
+   - If the workflow has "active": false in it's definition, it will be deactivated automatically
 3. If the --dry-run flag is set, it will show what would be done without making any changes
 4. If the --prune flag is set, it will remove workflows that are not present in the directory`,
 	RunE: SyncWorkflows,
 }
 
+// TODO - imeplement tags updates during sync
 func init() {
 	cmd.GetWorkflowsCmd().AddCommand(SyncCmd)
 
@@ -148,43 +150,93 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		return fmt.Errorf("unsupported file format: %s", ext)
 	}
 
-	var result *n8n.Workflow
+	var w *n8n.Workflow
+	var remoteWorkflow *n8n.Workflow
+
 	if workflow.Id != nil && *workflow.Id != "" {
-		if dryRun {
-			cmd.Printf("Would update workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
-		} else {
-			result, err = client.UpdateWorkflow(*workflow.Id, &workflow)
-			if err != nil {
-				return fmt.Errorf("error updating workflow: %w", err)
+		workflowList, fetchErr := client.GetWorkflows()
+		if fetchErr == nil && workflowList != nil && workflowList.Data != nil {
+			for _, wf := range *workflowList.Data {
+				if wf.Id != nil && *wf.Id == *workflow.Id {
+					remoteWorkflow = &wf
+					break
+				}
 			}
-			cmd.Printf("Updated workflow '%s' (ID: %s) from %s\n", result.Name, *result.Id, filename)
+		}
+
+		changes := DetectWorkflowChanges(&workflow, remoteWorkflow)
+
+		if dryRun {
+			if changes.NeedsUpdate {
+				cmd.Printf("Would update workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+			} else {
+				cmd.Printf("No content changes for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+			}
+		} else {
+			if changes.NeedsUpdate {
+				w, err = client.UpdateWorkflow(*workflow.Id, &workflow)
+				if err != nil {
+					return fmt.Errorf("error updating workflow: %w", err)
+				}
+				cmd.Printf("Updated workflow '%s' (ID: %s) from %s\n", w.Name, *w.Id, filename)
+			} else {
+				w = remoteWorkflow
+				cmd.Printf("No changes needed for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+			}
 		}
 	} else {
 		if dryRun {
 			cmd.Printf("Would create workflow '%s' from %s\n", workflow.Name, filename)
 		} else {
-			result, err = client.CreateWorkflow(&workflow)
+			w, err = client.CreateWorkflow(&workflow)
 			if err != nil {
 				return fmt.Errorf("error creating workflow: %w", err)
 			}
-			cmd.Printf("Created workflow '%s' (ID: %s) from %s\n", result.Name, *result.Id, filename)
+			cmd.Printf("Created workflow '%s' (ID: %s) from %s\n", w.Name, *w.Id, filename)
 		}
 	}
 
-	if !dryRun && result != nil {
-		if workflow.Active != nil && *workflow.Active {
-			_, err = client.ActivateWorkflow(*result.Id)
-			if err != nil {
-				return fmt.Errorf("error activating workflow: %w", err)
+	var changes WorkflowChange
+	if w == remoteWorkflow {
+		changes = DetectWorkflowChanges(&workflow, remoteWorkflow)
+	} else if remoteWorkflow != nil {
+		changes = DetectWorkflowChanges(&workflow, remoteWorkflow)
+	} else if workflow.Active != nil && *workflow.Active {
+		changes.NeedsActivation = true
+	} else if workflow.Active != nil && !*workflow.Active {
+		changes.NeedsDeactivation = true
+	}
+
+	if !dryRun && w != nil {
+		if workflow.Active != nil {
+			if *workflow.Active && changes.NeedsActivation {
+				_, err = client.ActivateWorkflow(*w.Id)
+				if err != nil {
+					return fmt.Errorf("error activating workflow: %w", err)
+				}
+				cmd.Printf("Activated workflow '%s' (ID: %s)\n", w.Name, *w.Id)
+			} else if !*workflow.Active && changes.NeedsDeactivation {
+				_, err = client.DeactivateWorkflow(*w.Id)
+				if err != nil {
+					return fmt.Errorf("error deactivating workflow: %w", err)
+				}
+				cmd.Printf("Deactivated workflow '%s' (ID: %s)\n", w.Name, *w.Id)
 			}
-			cmd.Printf("Activated workflow '%s' (ID: %s)\n", result.Name, *result.Id)
 		}
 	} else if dryRun {
-		if workflow.Active != nil && *workflow.Active {
-			if workflow.Id != nil && *workflow.Id != "" {
-				cmd.Printf("Would activate workflow '%s' (ID: %s)\n", workflow.Name, *workflow.Id)
-			} else {
-				cmd.Printf("Would activate workflow '%s' (after creation)\n", workflow.Name)
+		if workflow.Active != nil {
+			if *workflow.Active && changes.NeedsActivation {
+				if workflow.Id != nil && *workflow.Id != "" {
+					cmd.Printf("Would activate workflow '%s' (ID: %s)\n", workflow.Name, *workflow.Id)
+				} else {
+					cmd.Printf("Would activate workflow '%s' (after creation)\n", workflow.Name)
+				}
+			} else if !*workflow.Active && changes.NeedsDeactivation {
+				if workflow.Id != nil && *workflow.Id != "" {
+					cmd.Printf("Would deactivate workflow '%s' (ID: %s)\n", workflow.Name, *workflow.Id)
+				} else {
+					cmd.Printf("Would deactivate workflow '%s' (after creation)\n", workflow.Name)
+				}
 			}
 		}
 	}
@@ -276,4 +328,54 @@ func DryRunPruneWorkflows(client n8n.ClientInterface, cmd *cobra.Command, localW
 	}
 
 	return nil
+}
+
+// WorkflowChange represents possible changes between local and remote workflows
+type WorkflowChange struct {
+	NeedsUpdate       bool
+	NeedsActivation   bool
+	NeedsDeactivation bool
+}
+
+// DetectWorkflowChanges compares local and remote workflows to detect what changes are needed
+func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowChange {
+	changes := WorkflowChange{}
+
+	if remote == nil {
+		if local.Active != nil && *local.Active {
+			changes.NeedsActivation = true
+		}
+		return changes
+	}
+
+	localCopy := *local
+	localCopy.Id = nil
+	localCopy.Active = nil
+	localCopy.CreatedAt = nil
+	localCopy.UpdatedAt = nil
+	localCopy.Tags = nil // Exclude tags from comparison
+
+	remoteCopy := *remote
+	remoteCopy.Id = nil
+	remoteCopy.Active = nil
+	remoteCopy.CreatedAt = nil
+	remoteCopy.UpdatedAt = nil
+	remoteCopy.Tags = nil
+
+	localJSON, _ := json.Marshal(localCopy)
+	remoteJSON, _ := json.Marshal(remoteCopy)
+
+	changes.NeedsUpdate = string(localJSON) != string(remoteJSON)
+
+	if local.Active != nil && remote.Active != nil {
+		if *local.Active && !*remote.Active {
+			changes.NeedsActivation = true
+		} else if !*local.Active && *remote.Active {
+			changes.NeedsDeactivation = true
+		}
+	} else if local.Active != nil && *local.Active {
+		changes.NeedsActivation = true
+	}
+
+	return changes
 }
