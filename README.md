@@ -28,8 +28,13 @@
   - [Manual Installation with Go](#manual-installation-with-go)
 - [Configuration](#configuration)
 - [Commands](#commands)
-  - [List](#list)
-  - [Sync](#sync)
+  - [Version](#version)
+  - [Workflows](#workflows)
+    - [List](#list)
+    - [Refresh](#refresh)
+    - [Sync](#sync)
+    - [Activate](#activate)
+    - [Deactivate](#deactivate)
 
 ## Installation
 
@@ -77,12 +82,16 @@ You can generate an API key in the n8n UI under Settings > API.
 Display the version information of the n8n-cli:
 
 ```bash
-n8n-cli -v
+n8n --version
 # Or use the explicit command
-n8n-cli version
+n8n version
 ```
 
-### List
+### Workflows
+
+Manage n8n workflows with various subcommands.
+
+#### List
 
 List workflows from an n8n instance:
 
@@ -110,7 +119,37 @@ n8n workflows list --output json
 n8n workflows list --output yaml
 ```
 
-### Sync
+#### Refresh
+
+Refresh local workflow files with the current state from an n8n instance:
+
+```bash
+n8n workflows refresh --directory workflows/
+```
+
+The refresh command is an essential step before syncing to ensure you don't accidentally delete or overwrite workflows on the remote n8n instance. It pulls the current state of the workflows from n8n and updates or creates the corresponding local files.
+
+Options:
+
+- `--directory, -d`: Directory to store the workflow files (required)
+- `--dry-run`: Show what would be updated without making changes
+- `--overwrite`: Overwrite existing files even if they have a different name
+- `--output, -o`: Output format for new workflow files (json or yaml)
+
+Example:
+
+```bash
+# Refresh all workflows to local files
+n8n workflows refresh --directory workflows/
+
+# Preview what would be refreshed without making changes
+n8n workflows refresh --directory workflows/ --dry-run
+
+# Refresh workflows and save them as YAML files
+n8n workflows refresh --directory workflows/ --output yaml
+```
+
+#### Sync
 
 Synchronize JSON workflows from a local directory to an n8n instance:
 
@@ -120,10 +159,9 @@ n8n workflows sync --directory workflows/
 
 Options:
 
-- `--directory, -d`: Directory containing workflow JSON files (default: "workflows/")
-- `--activate-all, -a`: Activate all workflows after synchronization
-- `--dry-run, -n`: Show what would be done without making changes
-- `--verbose, -v`: Show detailed output during synchronization
+- `--directory, -d`: Directory containing workflow JSON files (required)
+- `--dry-run`: Show what would be done without making changes
+- `--prune`: Remove workflows from the n8n instance that are not present in the local directory
 
 How the sync command handles workflow IDs:
 
@@ -137,12 +175,35 @@ This ensures that workflows maintain their IDs across different environments and
 Example:
 
 ```bash
-# Sync all workflows and activate them
-n8n workflows sync --activate-all
+# Sync workflows to the n8n instance
+n8n workflows sync --directory workflows/
 
 # Test without making changes
-n8n workflows sync --dry-run
+n8n workflows sync --directory workflows/ --dry-run
+
+# Sync workflows and remove any remote workflows not in the local directory
+n8n workflows sync --directory workflows/ --prune
 ```
+
+#### Activate
+
+Activate a specific workflow by ID:
+
+```bash
+n8n workflows activate WORKFLOW_ID
+```
+
+This command activates a workflow in the n8n instance, making it ready to be triggered by events.
+
+#### Deactivate
+
+Deactivate a specific workflow by ID:
+
+```bash
+n8n workflows deactivate WORKFLOW_ID
+```
+
+This command deactivates a workflow in the n8n instance, stopping it from being triggered by events.
 
 ## Development
 
