@@ -17,8 +17,7 @@ This document outlines essential features for the n8n-cli tool based on the gene
 ### Credentials Management
 
 - [ ] List credentials from n8n instance
-- [ ] Export credentials (with option to exclude sensitive data)
-- [ ] Import credentials from local files
+- [ ] Apply credentials from Github to n8n instance - it seems that only creation is possible from openapi, which makes sense for security reasons. Have to check how to get the credentials reference correctly so it could be used in the workflow files
 
 ### Workflow Execution
 
