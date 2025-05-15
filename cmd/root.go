@@ -41,10 +41,8 @@ import workflows from n8n instances to your local directory, and manage your wor
 through version control systems.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if versionFlag, _ := cmd.Flags().GetBool("version"); versionFlag {
-			cmd.Println(fmt.Sprintf("n8n-cli %s", Version))
-			cmd.Println(fmt.Sprintf("Build Date: %s", BuildDate))
-			cmd.Println(fmt.Sprintf("Git Commit: %s", Commit))
-			return nil
+			err := versionCmd.RunE(cmd, args)
+			return err
 		}
 
 		cmd.SetOut(cmd.OutOrStdout())

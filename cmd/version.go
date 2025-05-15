@@ -24,14 +24,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/spf13/cobra"
-)
-
-// These variables will be set during the build
-var (
-	Version   = "dev"
-	BuildDate = "unknown"
-	Commit    = "none"
 )
 
 // versionCmd represents the version command
@@ -40,9 +34,9 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number of n8n-cli",
 	Long:  `All software has versions. This is n8n-cli's.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cmd.Println(fmt.Sprintf("n8n-cli %s", Version))
-		cmd.Println(fmt.Sprintf("Build Date: %s", BuildDate))
-		cmd.Println(fmt.Sprintf("Git Commit: %s", Commit))
+		cmd.Println(fmt.Sprintf("n8n-cli %s", config.Version))
+		cmd.Println(fmt.Sprintf("Build Date: %s", config.BuildDate))
+		cmd.Println(fmt.Sprintf("Git Commit: %s", config.Commit))
 		return nil
 	},
 }
