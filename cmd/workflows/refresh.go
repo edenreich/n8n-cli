@@ -148,6 +148,10 @@ func cleanWorkflow(workflow n8n.Workflow) map[string]interface{} {
 	delete(workflowMap, "createdAt")
 	delete(workflowMap, "updatedAt")
 
+	if _, exists := workflowMap["connections"]; !exists {
+		workflowMap["connections"] = make(map[string]interface{})
+	}
+
 	return workflowMap
 }
 
@@ -261,6 +265,12 @@ func serializeWorkflow(workflow n8n.Workflow, filePath string, minimal bool) ([]
 	var workflowToSerialize interface{} = workflow
 	if minimal {
 		workflowToSerialize = cleanWorkflow(workflow)
+	} else {
+		if workflow.Connections == nil {
+			workflowCopy := workflow
+			workflowCopy.Connections = make(map[string]interface{})
+			workflowToSerialize = workflowCopy
+		}
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
