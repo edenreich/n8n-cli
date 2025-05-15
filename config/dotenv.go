@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -35,8 +36,13 @@ func LoadEnvFile() {
 func LoadEnvFileWithReader(reader FileReader, v *viper.Viper) {
 	envFile, err := reader.Open(".env")
 	if err != nil {
-		return
+		cwd, _ := os.Getwd()
+		envFile, err = os.Open(filepath.Join(cwd, ".env"))
+		if err != nil {
+			return
+		}
 	}
+
 	defer func() {
 		if err := envFile.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Error closing .env file: %v\n", err)

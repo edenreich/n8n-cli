@@ -48,6 +48,16 @@ through version control systems.`,
 		cmd.SetOut(cmd.OutOrStdout())
 		return cmd.Help()
 	},
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Name() == "help" || cmd.Name() == "version" {
+			return nil
+		}
+
+		if IsWorkflowCommand(cmd) && viper.GetString("api_key") == "" {
+			return fmt.Errorf("API key is required. Set it using the --api-key flag or N8N_API_KEY environment variable")
+		}
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -78,4 +88,21 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
 	}
 	rootCmd.Flags().BoolP("verbose", "V", false, "Show detailed output during synchronization")
+}
+
+// IsWorkflowCommand checks if the command or any of its parents is the workflows command
+func IsWorkflowCommand(cmd *cobra.Command) bool {
+	if cmd.Name() == "workflows" || cmd.Name() == "list" || cmd.Name() == "sync" || cmd.Name() == "activate" || cmd.Name() == "deactivate" || cmd.Name() == "refresh" {
+		return true
+	}
+
+	parent := cmd.Parent()
+	for parent != nil {
+		if parent.Name() == "workflows" {
+			return true
+		}
+		parent = parent.Parent()
+	}
+
+	return false
 }

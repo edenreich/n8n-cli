@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6-rc.1](https://github.com/edenreich/n8n-cli/compare/v0.2.5...v0.2.6-rc.1) (2025-05-15)
+
+### 🐛 Bug Fixes
+
+* **dotenv:** Fix dotenv is not loading from the current working directory ([4ddb777](https://github.com/edenreich/n8n-cli/commit/4ddb7774d364f6aebe2d30f38f9e5d2c488f07e5))
+
+### 🔧 Miscellaneous
+
+* **todos:** Update workflow management checklist for accuracy ([34bb51f](https://github.com/edenreich/n8n-cli/commit/34bb51f4569c993733564796f018a6874579cb4d))
+
 ## [0.2.5](https://github.com/edenreich/n8n-cli/compare/v0.2.4...v0.2.5) (2025-05-15)
 
 ### 🐛 Bug Fixes
