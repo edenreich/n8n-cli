@@ -43,7 +43,7 @@ tasks:
   build:
     desc: 'Build the n8n CLI with version information'
     cmds:
-      - go build -ldflags="{{.LD_FLAGS}}" -o n8n-cli main.go
+      - go build -ldflags="{{.LD_FLAGS}}" -o n8n main.go
 
   test-unit:
     desc: 'Run only unit tests'
