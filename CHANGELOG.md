@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/edenreich/n8n-cli/compare/v0.2.6...v0.3.0) (2025-05-15)
+
+### ✨ Features
+
+* Improve Refresh functionality - implement --minimal flag ([#12](https://github.com/edenreich/n8n-cli/issues/12)) ([3f74baf](https://github.com/edenreich/n8n-cli/commit/3f74baf77e254ec29bbba008d917868c9dc2cb43))
+
+### 📚 Documentation
+
+* **README:** Add contributing section with link to CONTRIBUTING.md ([09bdf08](https://github.com/edenreich/n8n-cli/commit/09bdf08976ad018a7d8e8cdc12413a12081e6244))
+* **README:** Clarify instructions for creating and using the .env file ([12e7c1c](https://github.com/edenreich/n8n-cli/commit/12e7c1cbea7edceb26752483d9ba29426ab9b366))
+
+### 🔧 Miscellaneous
+
+* **todos:** Add validate command to apply static analysis on workflow files ([1a6a70f](https://github.com/edenreich/n8n-cli/commit/1a6a70ff82c3782a7472df5ddee4812c21a33d4e))
+* **todos:** Change priorities - will implement soon credentials syncer ([02ebe3d](https://github.com/edenreich/n8n-cli/commit/02ebe3d9beaacccb4e11a8501f3a9649afdbf3bf))
+* **todos:** Deprioritize list workflows by name tags and active status - it's a nice-to-have ([a95b102](https://github.com/edenreich/n8n-cli/commit/a95b1028094b333dcc4708311a683710e5b709c3))
+* **todos:** Fix formatting for workflow listing filter capabilities ([f3bac06](https://github.com/edenreich/n8n-cli/commit/f3bac06619f9a279e38b49e15b9f929aebe9870c))
+* **todos:** Simplify description of the task ([b9e0227](https://github.com/edenreich/n8n-cli/commit/b9e02277245a26c305aa0d9234f0576e139aec7a))
+
 ## [0.2.6](https://github.com/edenreich/n8n-cli/compare/v0.2.5...v0.2.6) (2025-05-15)
 
 ### 🐛 Bug Fixes
