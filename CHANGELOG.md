@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2](https://github.com/edenreich/n8n-cli/compare/v0.2.1...v0.2.2) (2025-05-15)
+
+### ♻️ Improvements
+
+* Rename CLI from n8n-cli to n8n and update installation script ([#8](https://github.com/edenreich/n8n-cli/issues/8)) ([7b51844](https://github.com/edenreich/n8n-cli/commit/7b51844c76fc737eb6810f7f199bd5764d3d6445))
+
+### 📚 Documentation
+
+* Enhance workflows management in README with new commands for list, refresh, activate, and deactivate ([#9](https://github.com/edenreich/n8n-cli/issues/9)) ([9d1838f](https://github.com/edenreich/n8n-cli/commit/9d1838f1722cd69c2e1aa040e897253c6cd5b0bc))
+
 ## [0.2.1](https://github.com/edenreich/n8n-cli/compare/v0.2.0...v0.2.1) (2025-05-15)
 
 ### 🐛 Bug Fixes
