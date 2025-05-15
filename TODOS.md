@@ -14,17 +14,17 @@ This document outlines essential features for the n8n-cli tool based on the gene
 - [ ] Get execution history for workflows
 - [ ] Implement validate command to apply static analysis on workflow files - should help to identify issues before syncing to n8n instance
 
-### Workflow Execution
-
-- [ ] Execute a workflow manually
-- [ ] Retrieve execution results
-- [ ] Monitor execution status
-
 ### Credentials Management
 
 - [ ] List credentials from n8n instance
 - [ ] Export credentials (with option to exclude sensitive data)
 - [ ] Import credentials from local files
+
+### Workflow Execution
+
+- [ ] Execute a workflow manually
+- [ ] Retrieve execution results
+- [ ] Monitor execution status
 
 ### Variables Management
 
