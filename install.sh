@@ -4,6 +4,7 @@ set -e
 
 GITHUB_REPO="edenreich/n8n-cli"
 INSTALL_DIR="$HOME/.local/bin"
+VERSION=""
 
 info() {
   echo "\033[0;34m==>\033[0m $1"
@@ -15,6 +16,15 @@ success() {
 
 error() {
   echo "\033[0;31mERROR:\033[0m $1" >&2
+  exit 1
+}
+
+usage() {
+  echo "Usage: $0 [--version|-v VERSION]"
+  echo ""
+  echo "Options:"
+  echo "  --version, -v VERSION   Specify the version to install (e.g., v1.0.0)"
+  echo "                          If not specified, the latest version will be installed"
   exit 1
 }
 
@@ -78,7 +88,18 @@ prepare_install_dir() {
 do_install() {
   OS=$(detect_os)
   ARCH=$(detect_arch)
-  VERSION=$(get_latest_release)
+  
+  if [ -z "$VERSION" ]; then
+    VERSION=$(get_latest_release)
+  else
+    case "$VERSION" in
+      v*)
+        ;;
+      *)
+        VERSION="v$VERSION"
+        ;;
+    esac
+  fi
   
   prepare_install_dir
   
@@ -164,5 +185,24 @@ do_install() {
     fi
   fi
 }
+
+# Parse command line arguments
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --version|-v)
+      if [ -z "$2" ] || [ "${2#-}" != "$2" ]; then
+        error "Option $1 requires a version argument"
+      fi
+      VERSION="$2"
+      shift 2
+      ;;
+    --help|-h)
+      usage
+      ;;
+    *)
+      error "Unknown option: $1"
+      ;;
+  esac
+done
 
 do_install

@@ -42,6 +42,8 @@
 
 ```bash
 curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh
+# Or install a specific version
+curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh -s -- --version v0.1.0-rc.1
 ```
 
 This script will automatically detect your operating system and architecture and install the appropriate binary.
