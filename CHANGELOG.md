@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0](https://github.com/edenreich/n8n-cli/compare/v0.1.4...v0.2.0) (2025-05-15)
+
+### ✨ Features
+
+* Add workflows management commands for listing, activating, and deactivating workflows ([#6](https://github.com/edenreich/n8n-cli/issues/6)) ([55b6014](https://github.com/edenreich/n8n-cli/commit/55b6014974348a671ad8ea4778aae76b178a20c4))
+
 ## [0.1.4](https://github.com/edenreich/n8n-cli/compare/v0.1.3...v0.1.4) (2025-05-12)
 
 ### ♻️ Improvements
