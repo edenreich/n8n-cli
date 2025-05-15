@@ -91,7 +91,7 @@ func TestVersionCommand(t *testing.T) {
 	assert.NoError(t, err, "Expected no error when executing version command")
 
 	output := buf.String()
-	assert.Contains(t, output, "n8n-cli 1.2.3", "Version should be included in output")
+	assert.Contains(t, output, "Version 1.2.3", "Version should be included in output")
 	assert.Contains(t, output, "Build Date: 2025-05-13", "Build date should be included in output")
 	assert.Contains(t, output, "Git Commit: abcdef123456", "Commit should be included in output")
 
