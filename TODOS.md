@@ -8,11 +8,11 @@ This document outlines essential features for the n8n-cli tool based on the gene
 
 - [x] Import workflows from n8n instance to local files
 - [x] Synchronize local workflow files to n8n instance
-- [] List all workflows with filter capabilities (by name, tags, active status)
 - [x] Activate/deactivate workflows
 - [x] Delete workflows from n8n instance
 - [ ] Get execution history for workflows
 - [ ] Implement validate command to apply static analysis on workflow files - should help to identify issues before syncing to n8n instance
+- [] List all workflows with filter capabilities (by name, tags, active status)
 
 ### Credentials Management
 
