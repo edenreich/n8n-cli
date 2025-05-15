@@ -12,6 +12,7 @@ This document outlines essential features for the n8n-cli tool based on the gene
 - [x] Activate/deactivate workflows
 - [x] Delete workflows from n8n instance
 - [ ] Get execution history for workflows
+- [ ] Implement validate command to apply static analysis on workflow files - should help to identify issues before syncing to n8n instance
 
 ### Workflow Execution
 
