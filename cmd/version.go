@@ -31,10 +31,10 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of n8n-cli",
-	Long:  `All software has versions. This is n8n-cli's.`,
+	Short: "Print the version number of n8n CLI",
+	Long:  `All software has versions. This is n8n's CLI.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cmd.Println(fmt.Sprintf("n8n-cli %s", config.Version))
+		cmd.Println(fmt.Sprintf("Version %s", config.Version))
 		cmd.Println(fmt.Sprintf("Build Date: %s", config.BuildDate))
 		cmd.Println(fmt.Sprintf("Git Commit: %s", config.Commit))
 		return nil
