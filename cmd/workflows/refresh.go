@@ -133,17 +133,29 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 		var filePath string
 		var action string
 
+		var extension string
+		switch strings.ToLower(output) {
+		case "yaml", "yml":
+			extension = ".yaml"
+		default:
+			extension = ".json"
+		}
+
 		if existingPath, exists := localFiles[*workflow.Id]; exists && !overwrite {
-			filePath = existingPath
-			action = "Updating"
-		} else {
-			var extension string
-			switch strings.ToLower(output) {
-			case "yaml", "yml":
-				extension = ".yaml"
-			default:
-				extension = ".json"
+			existingExt := filepath.Ext(existingPath)
+			if (strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml") &&
+				(strings.ToLower(existingExt) == ".json") {
+				filePath = filepath.Join(directory, sanitizedName+extension)
+				action = "Converting"
+			} else if strings.ToLower(output) == "json" &&
+				(strings.ToLower(existingExt) == ".yaml" || strings.ToLower(existingExt) == ".yml") {
+				filePath = filepath.Join(directory, sanitizedName+extension)
+				action = "Converting"
+			} else {
+				filePath = existingPath
+				action = "Updating"
 			}
+		} else {
 			filePath = filepath.Join(directory, sanitizedName+extension)
 			action = "Creating"
 		}
@@ -168,6 +180,23 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 			if err != nil {
 				return fmt.Errorf("error serializing workflow '%s' to JSON: %w", workflow.Name, err)
 			}
+		}
+
+		needsUpdate := true
+		if existingPath, exists := localFiles[*workflow.Id]; exists &&
+			strings.ToLower(filepath.Ext(existingPath)) == strings.ToLower(filepath.Ext(filePath)) {
+			if _, fileErr := os.Stat(filePath); fileErr == nil {
+				existingContent, readErr := os.ReadFile(filePath)
+				if readErr == nil {
+					needsUpdate = string(existingContent) != string(content)
+				}
+			}
+		}
+
+		if !needsUpdate && action == "Updating" {
+			cmd.Printf("No changes for workflow '%s' (ID: %s) in file: %s\n",
+				workflow.Name, *workflow.Id, filePath)
+			continue
 		}
 
 		if err := os.WriteFile(filePath, content, 0644); err != nil {
