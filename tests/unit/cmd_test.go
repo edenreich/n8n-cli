@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/edenreich/n8n-cli/cmd"
+	"github.com/edenreich/n8n-cli/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,13 +75,13 @@ func TestFormatAPIBaseURL(t *testing.T) {
 }
 
 func TestVersionCommand(t *testing.T) {
-	origVersion := cmd.Version
-	origBuildDate := cmd.BuildDate
-	origCommit := cmd.Commit
+	origVersion := config.Version
+	origBuildDate := config.BuildDate
+	origCommit := config.Commit
 
-	cmd.Version = "1.2.3"
-	cmd.BuildDate = "2025-05-13"
-	cmd.Commit = "abcdef123456"
+	config.Version = "1.2.3"
+	config.BuildDate = "2025-05-13"
+	config.Commit = "abcdef123456"
 
 	buf := new(bytes.Buffer)
 	versionCmd := cmd.GetVersionCmd()
@@ -94,7 +95,7 @@ func TestVersionCommand(t *testing.T) {
 	assert.Contains(t, output, "Build Date: 2025-05-13", "Build date should be included in output")
 	assert.Contains(t, output, "Git Commit: abcdef123456", "Commit should be included in output")
 
-	cmd.Version = origVersion
-	cmd.BuildDate = origBuildDate
-	cmd.Commit = origCommit
+	config.Version = origVersion
+	config.BuildDate = origBuildDate
+	config.Commit = origCommit
 }
