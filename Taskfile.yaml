@@ -8,9 +8,9 @@ vars:
   BUILD_DATE:
     sh: date -u '+%Y-%m-%d_%H:%M:%S' || echo "unknown"
   LD_FLAGS: >-
-    -X github.com/edenreich/n8n-cli/cmd.Version={{.VERSION}}
-    -X github.com/edenreich/n8n-cli/cmd.BuildDate={{.BUILD_DATE}}
-    -X github.com/edenreich/n8n-cli/cmd.Commit={{.COMMIT}}
+    -X github.com/edenreich/n8n-cli/config.Version={{.VERSION}}
+    -X github.com/edenreich/n8n-cli/config.BuildDate={{.BUILD_DATE}}
+    -X github.com/edenreich/n8n-cli/config.Commit={{.COMMIT}}
 
 tasks:
   oas-download:
