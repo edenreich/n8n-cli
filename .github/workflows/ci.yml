@@ -39,16 +39,28 @@ jobs:
 
       - name: Generate and tidy
         run: |
+          # Save the state before running commands
+          echo "=== Before running commands ==="
+          git status --short
+
+          # Run the commands that might modify files
+          echo "=== Running go mod tidy ==="
           go mod tidy
+
+          echo "=== Running go generate ==="
           go generate ./...
 
       - name: Check for uncommitted changes
         run: |
+          echo "=== Files changed by go mod tidy and go generate ==="
+          git status --short
+
+          echo "=== Detailed diff of changes ==="
+          git diff
+
           if ! git diff-index --quiet HEAD --; then
             echo "Error: Uncommitted changes detected after go mod tidy and go generate"
             echo "Please commit these changes or update your PR"
-            git status --short
-            git diff
             exit 1
           fi
           echo "Repository is clean - no uncommitted changes detected"
