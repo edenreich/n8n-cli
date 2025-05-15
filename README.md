@@ -247,3 +247,7 @@ task build
 # Run the CLI during development (args are passed to the CLI)
 task cli -- workflows list
 ```
+
+## Contributing
+
+We welcome contributions! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on how to set up the development environment, project structure, testing, and the pull request process.
