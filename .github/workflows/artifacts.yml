@@ -57,7 +57,7 @@ jobs:
           GOARCH: ${{ matrix.go-arch }}
           CGO_ENABLED: 0
         run: |
-          APP_NAME=n8n-cli
+          APP_NAME=n8n
           if [ -n "${{ github.event.inputs.version }}" ]; then
             VERSION=${{ github.event.inputs.version }}
             VERSION=${VERSION#v}

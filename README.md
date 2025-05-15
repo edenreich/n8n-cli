@@ -51,9 +51,9 @@ This script will automatically detect your operating system and architecture and
 To enable auto completion for `bash`, `zsh`, or `fish`, run the following command:
 
 ```bash
-source <(n8n-cli completion bash) # for bash
-source <(n8n-cli completion zsh)  # for zsh
-source <(n8n-cli completion fish) # for fish
+source <(n8n completion bash) # for bash
+source <(n8n completion zsh)  # for zsh
+source <(n8n completion fish) # for fish
 ```
 
 If you need it permanently, add it to your shell's configuration file (e.g., `~/.bashrc`, `~/.zshrc`, or `~/.config/fish/config.fish`).
@@ -79,7 +79,7 @@ You can generate an API key in the n8n UI under Settings > API.
 
 ### Version
 
-Display the version information of the n8n-cli:
+Display the version information of the n8n CLI:
 
 ```bash
 n8n --version
