@@ -72,7 +72,7 @@ go install github.com/edenreich/n8n-cli@latest
 
 ## Configuration
 
-Create a `.env` file with the following variables:
+Create a `.env` file in your current directory. The CLI will automatically load environment variables from this file.
 
 ```
 N8N_API_KEY=your_n8n_api_key
@@ -80,6 +80,17 @@ N8N_INSTANCE_URL=https://your-instance.n8n.cloud
 ```
 
 You can generate an API key in the n8n UI under Settings > API.
+
+Alternatively, you can set these environment variables directly in your shell:
+
+```bash
+export N8N_API_KEY=your_n8n_api_key
+export N8N_INSTANCE_URL=https://your-instance.n8n.cloud
+```
+
+Note: Environment variables set directly in your shell will take precedence over those defined in the `.env` file.
+
+**Important:** Never commit your `.env` file containing API credentials to version control systems like GitHub. Make sure to add `.env` to your `.gitignore` file to prevent accidental exposure of sensitive credentials.
 
 ## Commands
 
