@@ -58,6 +58,37 @@ type FakeClientInterface struct {
 	deleteWorkflowReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetExecutionByIdStub        func(string, bool) (*n8n.Execution, error)
+	getExecutionByIdMutex       sync.RWMutex
+	getExecutionByIdArgsForCall []struct {
+		arg1 string
+		arg2 bool
+	}
+	getExecutionByIdReturns struct {
+		result1 *n8n.Execution
+		result2 error
+	}
+	getExecutionByIdReturnsOnCall map[int]struct {
+		result1 *n8n.Execution
+		result2 error
+	}
+	GetExecutionsStub        func(string, bool, string, int, string) (*n8n.ExecutionList, error)
+	getExecutionsMutex       sync.RWMutex
+	getExecutionsArgsForCall []struct {
+		arg1 string
+		arg2 bool
+		arg3 string
+		arg4 int
+		arg5 string
+	}
+	getExecutionsReturns struct {
+		result1 *n8n.ExecutionList
+		result2 error
+	}
+	getExecutionsReturnsOnCall map[int]struct {
+		result1 *n8n.ExecutionList
+		result2 error
+	}
 	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
@@ -341,6 +372,139 @@ func (fake *FakeClientInterface) DeleteWorkflowReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
+func (fake *FakeClientInterface) GetExecutionById(arg1 string, arg2 bool) (*n8n.Execution, error) {
+	fake.getExecutionByIdMutex.Lock()
+	ret, specificReturn := fake.getExecutionByIdReturnsOnCall[len(fake.getExecutionByIdArgsForCall)]
+	fake.getExecutionByIdArgsForCall = append(fake.getExecutionByIdArgsForCall, struct {
+		arg1 string
+		arg2 bool
+	}{arg1, arg2})
+	stub := fake.GetExecutionByIdStub
+	fakeReturns := fake.getExecutionByIdReturns
+	fake.recordInvocation("GetExecutionById", []interface{}{arg1, arg2})
+	fake.getExecutionByIdMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetExecutionByIdCallCount() int {
+	fake.getExecutionByIdMutex.RLock()
+	defer fake.getExecutionByIdMutex.RUnlock()
+	return len(fake.getExecutionByIdArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetExecutionByIdCalls(stub func(string, bool) (*n8n.Execution, error)) {
+	fake.getExecutionByIdMutex.Lock()
+	defer fake.getExecutionByIdMutex.Unlock()
+	fake.GetExecutionByIdStub = stub
+}
+
+func (fake *FakeClientInterface) GetExecutionByIdArgsForCall(i int) (string, bool) {
+	fake.getExecutionByIdMutex.RLock()
+	defer fake.getExecutionByIdMutex.RUnlock()
+	argsForCall := fake.getExecutionByIdArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClientInterface) GetExecutionByIdReturns(result1 *n8n.Execution, result2 error) {
+	fake.getExecutionByIdMutex.Lock()
+	defer fake.getExecutionByIdMutex.Unlock()
+	fake.GetExecutionByIdStub = nil
+	fake.getExecutionByIdReturns = struct {
+		result1 *n8n.Execution
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetExecutionByIdReturnsOnCall(i int, result1 *n8n.Execution, result2 error) {
+	fake.getExecutionByIdMutex.Lock()
+	defer fake.getExecutionByIdMutex.Unlock()
+	fake.GetExecutionByIdStub = nil
+	if fake.getExecutionByIdReturnsOnCall == nil {
+		fake.getExecutionByIdReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Execution
+			result2 error
+		})
+	}
+	fake.getExecutionByIdReturnsOnCall[i] = struct {
+		result1 *n8n.Execution
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetExecutions(arg1 string, arg2 bool, arg3 string, arg4 int, arg5 string) (*n8n.ExecutionList, error) {
+	fake.getExecutionsMutex.Lock()
+	ret, specificReturn := fake.getExecutionsReturnsOnCall[len(fake.getExecutionsArgsForCall)]
+	fake.getExecutionsArgsForCall = append(fake.getExecutionsArgsForCall, struct {
+		arg1 string
+		arg2 bool
+		arg3 string
+		arg4 int
+		arg5 string
+	}{arg1, arg2, arg3, arg4, arg5})
+	stub := fake.GetExecutionsStub
+	fakeReturns := fake.getExecutionsReturns
+	fake.recordInvocation("GetExecutions", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.getExecutionsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetExecutionsCallCount() int {
+	fake.getExecutionsMutex.RLock()
+	defer fake.getExecutionsMutex.RUnlock()
+	return len(fake.getExecutionsArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetExecutionsCalls(stub func(string, bool, string, int, string) (*n8n.ExecutionList, error)) {
+	fake.getExecutionsMutex.Lock()
+	defer fake.getExecutionsMutex.Unlock()
+	fake.GetExecutionsStub = stub
+}
+
+func (fake *FakeClientInterface) GetExecutionsArgsForCall(i int) (string, bool, string, int, string) {
+	fake.getExecutionsMutex.RLock()
+	defer fake.getExecutionsMutex.RUnlock()
+	argsForCall := fake.getExecutionsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *FakeClientInterface) GetExecutionsReturns(result1 *n8n.ExecutionList, result2 error) {
+	fake.getExecutionsMutex.Lock()
+	defer fake.getExecutionsMutex.Unlock()
+	fake.GetExecutionsStub = nil
+	fake.getExecutionsReturns = struct {
+		result1 *n8n.ExecutionList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetExecutionsReturnsOnCall(i int, result1 *n8n.ExecutionList, result2 error) {
+	fake.getExecutionsMutex.Lock()
+	defer fake.getExecutionsMutex.Unlock()
+	fake.GetExecutionsStub = nil
+	if fake.getExecutionsReturnsOnCall == nil {
+		fake.getExecutionsReturnsOnCall = make(map[int]struct {
+			result1 *n8n.ExecutionList
+			result2 error
+		})
+	}
+	fake.getExecutionsReturnsOnCall[i] = struct {
+		result1 *n8n.ExecutionList
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
@@ -473,6 +637,10 @@ func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	defer fake.deactivateWorkflowMutex.RUnlock()
 	fake.deleteWorkflowMutex.RLock()
 	defer fake.deleteWorkflowMutex.RUnlock()
+	fake.getExecutionByIdMutex.RLock()
+	defer fake.getExecutionByIdMutex.RUnlock()
+	fake.getExecutionsMutex.RLock()
+	defer fake.getExecutionsMutex.RUnlock()
 	fake.getWorkflowsMutex.RLock()
 	defer fake.getWorkflowsMutex.RUnlock()
 	fake.updateWorkflowMutex.RLock()
