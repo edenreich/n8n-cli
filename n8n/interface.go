@@ -17,6 +17,10 @@ type ClientInterface interface {
 	UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error)
 	// DeleteWorkflow deletes a workflow by its ID
 	DeleteWorkflow(id string) error
+	// GetExecutions fetches workflow executions from the n8n API
+	GetExecutions(workflowID string, includeData bool, status string, limit int, cursor string) (*ExecutionList, error)
+	// GetExecutionById fetches a specific execution by its ID
+	GetExecutionById(executionID string, includeData bool) (*Execution, error)
 }
 
 // Ensure Client implements ClientInterface
