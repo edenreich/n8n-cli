@@ -1,0 +1,57 @@
+version: '3'
+
+dotenv:
+  - .env
+
+vars:
+  WORKFLOW_DIR: workflows
+
+tasks:
+  sync:
+    desc: Sync AI workflows to n8n instance
+    cmds:
+      - echo "Syncing AI workflows to n8n instance..."
+      - n8n workflows sync --directory {{.WORKFLOW_DIR}}/
+
+  sync-dry-run:
+    desc: Preview sync without making changes
+    cmds:
+      - echo "Previewing sync (dry run)..."
+      - n8n workflows sync --directory {{.WORKFLOW_DIR}}/ --dry-run
+
+  refresh:
+    desc: Refresh local workflows from n8n instance
+    cmds:
+      - echo "Refreshing workflows from n8n instance..."
+      - n8n workflows refresh --directory {{.WORKFLOW_DIR}}/ --output yaml
+
+  list:
+    desc: List workflows from n8n instance
+    cmds:
+      - echo "Listing workflows from n8n instance..."
+      - n8n workflows list
+
+  preview:
+    desc: Start a local web server to preview the HTML form
+    cmds:
+      - echo "Starting web server on http://localhost:8000..."
+      - python3 -m http.server 8000 || python -m SimpleHTTPServer 8000
+
+  setup-env:
+    desc: Create a template .env file (won't overwrite existing)
+    cmds:
+      - |
+        if [ ! -f .env ]; then
+          echo "Creating template .env file..."
+          echo "N8N_API_KEY=your_api_key_here" > .env
+          echo "N8N_INSTANCE_URL=https://your-instance.n8n.cloud" >> .env
+          echo "Created .env file. Please update with your actual credentials."
+        else
+          echo ".env file already exists. Not overwriting."
+        fi
+
+  help:
+    desc: Display available tasks
+    silent: true
+    cmds:
+      - task --list

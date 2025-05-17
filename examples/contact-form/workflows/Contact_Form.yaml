@@ -1,0 +1,62 @@
+---
+active: true
+connections:
+  Webhook:
+    main:
+      - - index: 0
+          node: Email
+          type: main
+name: Contact Form
+nodes:
+  - id: 7141f146-c1d4-4310-8f47-6026dd6f1b33
+    name: Webhook
+    parameters:
+      httpMethod: POST
+      options:
+        allowedOrigins: https://example.com
+        ignoreBots: false
+      path: contact-form-submission
+      responseMode: responseNode
+    position:
+      - -1520
+      - -600
+    type: n8n-nodes-base.webhook
+  - id: a803f7d3-a7ce-4e05-9b4c-ef8c962c7224
+    name: Email
+    parameters:
+      fromEmail: no-reply@example.com
+      subject: =New Contact Request from {{ $json.body.name }}
+      text: |-
+        =New Contact Form Submission
+
+        Name: {{ $json.body.name }}
+        Email: {{ $json.body.email }}
+        Message: {{ $json.body.message }}
+
+        ---
+        This message was sent from your website contact form.
+      toEmail: admin@example.com
+    position:
+      - -640
+      - -600
+    type: n8n-nodes-base.emailSend
+  - id: b704a8d2-e1db-4fcf-8f0b-41b70c061e23
+    name: Respond to Webhook
+    parameters:
+      options:
+        responseCode: 200
+      responseData: json
+      responseDataJson: |-
+        {
+          "success": true,
+          "message": "Thank you for your message! We will get back to you soon."
+        }
+    position:
+      - 0
+      - -600
+    type: n8n-nodes-base.respondToWebhook
+    connections:
+      main:
+        - - index: 0
+            node: Email
+            type: main
