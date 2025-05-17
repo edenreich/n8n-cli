@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1](https://github.com/edenreich/n8n-cli/compare/v0.3.0...v0.3.1) (2025-05-17)
+
+### 🐛 Bug Fixes
+
+* **workflows-sync:** exclude ID and active fields when creating workflows ([#15](https://github.com/edenreich/n8n-cli/issues/15)) ([6dea048](https://github.com/edenreich/n8n-cli/commit/6dea04824fbad4e83587593c29b9ea1e2ca088ef))
+
 ## [0.3.0](https://github.com/edenreich/n8n-cli/compare/v0.2.6...v0.3.0) (2025-05-15)
 
 ### ✨ Features
