@@ -133,7 +133,13 @@ func (c *Client) DeactivateWorkflow(id string) (*Workflow, error) {
 func (c *Client) CreateWorkflow(workflow *Workflow) (*Workflow, error) {
 	url := fmt.Sprintf("%s/workflows", c.baseURL)
 
-	body, err := json.Marshal(workflow)
+	workflowCopy := *workflow
+	workflowCopy.Id = nil
+	workflowCopy.Active = nil
+	workflowCopy.CreatedAt = nil
+	workflowCopy.UpdatedAt = nil
+
+	body, err := json.Marshal(workflowCopy)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling workflow: %w", err)
 	}
