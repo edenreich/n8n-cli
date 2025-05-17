@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Enhanced Contact Form</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        background-color: #f6f9fc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: #333;
+      }
+      .container {
+        width: 100%;
+        max-width: 550px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #2d3748;
+        font-weight: 600;
+      }
+      .ai-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 14px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+      .form-description {
+        text-align: center;
+        color: #718096;
+        margin-bottom: 25px;
+        font-size: 16px;
+      }
+      .form-group {
+        margin-bottom: 24px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #4a5568;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-sizing: border-box;
+        background-color: #f8fafc;
+        font-size: 16px;
+        transition: all 0.2s ease;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      }
+      textarea {
+        height: 150px;
+        resize: vertical;
+      }
+      button {
+        display: block;
+        width: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: #fff;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1);
+      }
+      .success-message,
+      .error-message,
+      .processing-message {
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 24px;
+        display: none;
+      }
+      .success-message {
+        background-color: #d1fae5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+      }
+      .error-message {
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+      }
+      .processing-message {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .spinner {
+        border: 3px solid rgba(99, 102, 241, 0.3);
+        border-radius: 50%;
+        border-top: 3px solid #6366f1;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .ai-features {
+        background-color: #f8fafc;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        border-left: 4px solid #8b5cf6;
+      }
+      .ai-features h3 {
+        margin-top: 0;
+        color: #4a5568;
+      }
+      .ai-features ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+        color: #718096;
+      }
+      .priority-selector {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .priority-button {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      .priority-low {
+        color: #059669;
+      }
+      .priority-medium {
+        color: #d97706;
+      }
+      .priority-high {
+        color: #dc2626;
+      }
+
+      .priority-button.selected {
+        border-width: 2px;
+      }
+      .priority-low.selected {
+        border-color: #059669;
+        background-color: rgba(5, 150, 105, 0.1);
+      }
+      .priority-medium.selected {
+        border-color: #d97706;
+        background-color: rgba(217, 119, 6, 0.1);
+      }
+      .priority-high.selected {
+        border-color: #dc2626;
+        background-color: rgba(220, 38, 38, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Contact Us <span class="ai-badge">AI-Enhanced</span></h1>
+      <p class="form-description">
+        Your message will be analyzed by AI to provide you with the quickest,
+        most relevant response.
+      </p>
+
+      <div class="ai-features">
+        <h3>AI-Powered Features:</h3>
+        <ul>
+          <li>Smart message categorization</li>
+          <li>Priority-based handling</li>
+          <li>Intelligent response suggestions</li>
+        </ul>
+      </div>
+
+      <form id="contactForm">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="category">Message Category</label>
+          <select id="category" name="category">
+            <option value="question">Question</option>
+            <option value="feedback">Feedback</option>
+            <option value="support">Support Request</option>
+            <option value="business">Business Inquiry</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <div class="priority-selector">
+            <div class="priority-button priority-low" data-value="low">Low</div>
+            <div
+              class="priority-button priority-medium selected"
+              data-value="medium"
+            >
+              Medium
+            </div>
+            <div class="priority-button priority-high" data-value="high">
+              High
+            </div>
+          </div>
+          <input type="hidden" id="priority" name="priority" value="medium" />
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+
+      <div class="processing-message" id="processingMessage">
+        <div class="spinner"></div>
+        <div>Processing with AI...</div>
+      </div>
+      <div class="success-message" id="successMessage">
+        Thank you for your message! Our AI has analyzed your request and
+        prioritized it. We will get back to you soon.
+      </div>
+      <div class="error-message" id="errorMessage">
+        An error occurred. Please try again later.
+      </div>
+    </div>
+
+    <script>
+      // Set up priority selector
+      document.querySelectorAll('.priority-button').forEach((button) => {
+        button.addEventListener('click', function () {
+          // Remove selected class from all buttons
+          document.querySelectorAll('.priority-button').forEach((btn) => {
+            btn.classList.remove('selected');
+          });
+
+          // Add selected class to clicked button
+          this.classList.add('selected');
+
+          // Update hidden input value
+          document.getElementById('priority').value = this.dataset.value;
+        });
+      });
+
+      // Handle form submission
+      document
+        .getElementById('contactForm')
+        .addEventListener('submit', function (event) {
+          event.preventDefault();
+
+          // Show processing message
+          document.getElementById('processingMessage').style.display = 'flex';
+          document.getElementById('successMessage').style.display = 'none';
+          document.getElementById('errorMessage').style.display = 'none';
+
+          // Get form values
+          const name = document.getElementById('name').value;
+          const email = document.getElementById('email').value;
+          const message = document.getElementById('message').value;
+          const category = document.getElementById('category').value;
+          const priority = document.getElementById('priority').value;
+
+          // Create payload
+          const payload = {
+            body: {
+              name: name,
+              email: email,
+              message: message,
+              category: category,
+              priority: priority,
+            },
+          };
+
+          // Replace with your actual n8n webhook URL
+          const webhookUrl = 'YOUR_N8N_WEBHOOK_URL_HERE';
+
+          // Send data to n8n
+          fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              // Hide processing message
+              document.getElementById('processingMessage').style.display =
+                'none';
+
+              if (data.success) {
+                document.getElementById('successMessage').style.display =
+                  'block';
+                document.getElementById('contactForm').reset();
+
+                // Set default priority to medium
+                document.querySelectorAll('.priority-button').forEach((btn) => {
+                  btn.classList.remove('selected');
+                  if (btn.dataset.value === 'medium') {
+                    btn.classList.add('selected');
+                  }
+                });
+                document.getElementById('priority').value = 'medium';
+              } else {
+                throw new Error('Form submission failed');
+              }
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+              document.getElementById('processingMessage').style.display =
+                'none';
+              document.getElementById('errorMessage').style.display = 'block';
+            });
+        });
+    </script>
+  </body>
+</html>

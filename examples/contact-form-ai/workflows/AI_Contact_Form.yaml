@@ -1,0 +1,126 @@
+---
+active: true
+connections:
+  Webhook:
+    main:
+      - - index: 0
+          node: Set Message Variables
+          type: main
+  Set Message Variables:
+    main:
+      - - index: 0
+          node: AI Summary
+          type: main
+  AI Summary:
+    main:
+      - - index: 0
+          node: Email
+          type: main
+  Email:
+    main:
+      - - index: 0
+          node: Respond to Webhook
+          type: main
+name: AI Contact Form
+nodes:
+  - id: 7141f146-c1d4-4310-8f47-6026dd6f1b33
+    name: Webhook
+    parameters:
+      httpMethod: POST
+      options:
+        allowedOrigins: https://example.com
+        ignoreBots: false
+      path: ai-contact-form-submission
+      responseMode: responseNode
+    position:
+      - -1520
+      - -600
+    type: n8n-nodes-base.webhook
+  - id: b704a8d2-e1db-4fcf-8f0b-41b70c061e23
+    name: Respond to Webhook
+    parameters:
+      options:
+        responseCode: 200
+      responseData: json
+      responseDataJson: |-
+        {
+          "success": true,
+          "message": "Thank you for your message! We will get back to you soon."
+        }
+    position:
+      - 0
+      - -600
+    type: n8n-nodes-base.respondToWebhook
+  - id: a803f7d3-a7ce-4e05-9b4c-ef8c962c7224
+    name: Email
+    parameters:
+      fromEmail: no-reply@example.com
+      subject: =New AI-Analyzed Contact from {{ $node["Set Message Variables"].json.name }}
+      text: |-
+        =New Contact Form Submission (AI-Analyzed)
+
+        Original Details:
+        -----------------
+        Name: {{ $node["Set Message Variables"].json.name }}
+        Email: {{ $node["Set Message Variables"].json.email }}
+        Message: {{ $node["Set Message Variables"].json.message }}
+
+        AI Analysis:
+        ------------
+        {{ $node["AI Summary"].json.aiSummary }}
+
+        Response Suggestion:
+        ------------------
+        {{ $node["AI Summary"].json.responseSuggestion }}
+
+        ---
+        This message was processed by AI and sent from your website contact form.
+      toEmail: admin@example.com
+    position:
+      - -640
+      - -600
+    type: n8n-nodes-base.emailSend
+  - id: 47afe462-69cd-4300-a7d1-387886b9fe81
+    name: Set Message Variables
+    parameters:
+      values:
+        string:
+          - name: '={{ $json.body.name }}'
+            email: '={{ $json.body.email }}'
+            message: '={{ $json.body.message }}'
+    position:
+      - -1350
+      - -600
+    type: n8n-nodes-base.set
+  - id: 8e471b29-d1a3-4e75-aad8-53617c1d2e45
+    name: AI Summary
+    parameters:
+      authentication: genericCredentialType
+      options:
+        expectedOutputFormat: auto-detect
+      prompt: |-
+        You are a customer service AI assistant. You're analyzing a contact form submission.
+
+        User's information:
+        Name: {{ $json.name }}
+        Email: {{ $json.email }}
+        Message: {{ $json.message }}
+
+        Please provide:
+        1. A concise summary of the customer's message (max 3 sentences)
+        2. A categorization of the message (question, complaint, feedback, request, etc.)
+        3. The general sentiment of the message (positive, neutral, negative)
+        4. A suggested response to the customer
+
+        Format your response as a JSON with these keys:
+        {
+          "aiSummary": "...",
+          "category": "...",
+          "sentiment": "...",
+          "responseSuggestion": "..."
+        }
+      responseFormat: json
+    position:
+      - -1000
+      - -600
+    type: n8n-nodes-base.openAi

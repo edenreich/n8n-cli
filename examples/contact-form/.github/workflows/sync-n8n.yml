@@ -1,0 +1,34 @@
+name: Sync n8n Workflows
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'examples/contact/.github/workflows/sync-n8n.yml'
+      - 'examples/contact/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Install n8n CLI
+        run: |
+          curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: '3.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync workflows to n8n
+        env:
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          N8N_INSTANCE_URL: ${{ secrets.N8N_INSTANCE_URL }}
+        run: |
+          task sync
