@@ -1,16 +1,6 @@
 ---
-active: true
+active: false
 connections:
-  Webhook:
-    main:
-      - - index: 0
-          node: Set Message Variables
-          type: main
-  Set Message Variables:
-    main:
-      - - index: 0
-          node: AI Summary
-          type: main
   AI Summary:
     main:
       - - index: 0
@@ -20,6 +10,16 @@ connections:
     main:
       - - index: 0
           node: Respond to Webhook
+          type: main
+  Set Message Variables:
+    main:
+      - - index: 0
+          node: AI Summary
+          type: main
+  Webhook:
+    main:
+      - - index: 0
+          node: Set Message Variables
           type: main
 name: AI Contact Form
 nodes:
@@ -85,9 +85,9 @@ nodes:
     parameters:
       values:
         string:
-          - name: '={{ $json.body.name }}'
-            email: '={{ $json.body.email }}'
-            message: '={{ $json.body.message }}'
+          - email: ={{ $json.body.email }}
+            message: ={{ $json.body.message }}
+            name: ={{ $json.body.name }}
     position:
       - -1350
       - -600

@@ -2,6 +2,13 @@
 
 This example demonstrates how to set up an AI-enhanced contact form workflow in n8n and synchronize it using the n8n-cli and GitHub Actions.
 
+## Prerequisites
+
+- Task installed: [Task](https://taskfile.dev/)
+- The CLI installed: `task install-cli`
+- An n8n instance (self-hosted or cloud)
+- OpenAI API key
+
 ## Overview
 
 This example includes:

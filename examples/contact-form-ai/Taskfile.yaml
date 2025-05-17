@@ -7,6 +7,12 @@ vars:
   WORKFLOW_DIR: workflows
 
 tasks:
+  install-cli:
+    desc: Install n8n CLI
+    cmds:
+      - echo "Installing n8n CLI..."
+      - curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh
+
   sync:
     desc: Sync AI workflows to n8n instance
     cmds:
