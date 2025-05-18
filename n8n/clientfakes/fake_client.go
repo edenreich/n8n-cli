@@ -58,6 +58,19 @@ type FakeClientInterface struct {
 	deleteWorkflowReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetWorkflowStub        func(string) (*n8n.Workflow, error)
+	getWorkflowMutex       sync.RWMutex
+	getWorkflowArgsForCall []struct {
+		arg1 string
+	}
+	getWorkflowReturns struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	getWorkflowReturnsOnCall map[int]struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
 	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
@@ -341,6 +354,70 @@ func (fake *FakeClientInterface) DeleteWorkflowReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
+func (fake *FakeClientInterface) GetWorkflow(arg1 string) (*n8n.Workflow, error) {
+	fake.getWorkflowMutex.Lock()
+	ret, specificReturn := fake.getWorkflowReturnsOnCall[len(fake.getWorkflowArgsForCall)]
+	fake.getWorkflowArgsForCall = append(fake.getWorkflowArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetWorkflowStub
+	fakeReturns := fake.getWorkflowReturns
+	fake.recordInvocation("GetWorkflow", []interface{}{arg1})
+	fake.getWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetWorkflowCallCount() int {
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
+	return len(fake.getWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetWorkflowCalls(stub func(string) (*n8n.Workflow, error)) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) GetWorkflowArgsForCall(i int) string {
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
+	argsForCall := fake.getWorkflowArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) GetWorkflowReturns(result1 *n8n.Workflow, result2 error) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = nil
+	fake.getWorkflowReturns = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetWorkflowReturnsOnCall(i int, result1 *n8n.Workflow, result2 error) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = nil
+	if fake.getWorkflowReturnsOnCall == nil {
+		fake.getWorkflowReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Workflow
+			result2 error
+		})
+	}
+	fake.getWorkflowReturnsOnCall[i] = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
@@ -473,6 +550,8 @@ func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	defer fake.deactivateWorkflowMutex.RUnlock()
 	fake.deleteWorkflowMutex.RLock()
 	defer fake.deleteWorkflowMutex.RUnlock()
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
 	fake.getWorkflowsMutex.RLock()
 	defer fake.getWorkflowsMutex.RUnlock()
 	fake.updateWorkflowMutex.RLock()
