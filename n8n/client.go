@@ -285,3 +285,78 @@ func (c *Client) DeleteWorkflow(id string) error {
 
 	return nil
 }
+
+// GetWorkflowTags fetches the tags of a workflow by its ID
+func (c *Client) GetWorkflowTags(id string) (WorkflowTags, error) {
+	url := fmt.Sprintf("%s/workflows/%s/tags", c.baseURL, id)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var tags WorkflowTags
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return nil, err
+	}
+
+	return tags, nil
+}
+
+// UpdateWorkflowTags updates the tags of a workflow by its ID
+func (c *Client) UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, error) {
+	url := fmt.Sprintf("%s/workflows/%s/tags", c.baseURL, id)
+
+	jsonBody, err := json.Marshal(tagIds)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var tags WorkflowTags
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return nil, err
+	}
+
+	return tags, nil
+}
