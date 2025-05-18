@@ -427,21 +427,13 @@ func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowCh
 	localCopy := *local
 	localCopy.Id = nil
 	localCopy.Active = nil
-	localCopy.CreatedAt = nil
-	localCopy.UpdatedAt = nil
-	localCopy.Tags = nil
 
+	localCopy.Id = nil
 	remoteCopy := *remote
 	remoteCopy.Id = nil
 	remoteCopy.Active = nil
-	remoteCopy.CreatedAt = nil
-	remoteCopy.UpdatedAt = nil
-	remoteCopy.Tags = nil
 
-	localJSON, _ := json.Marshal(localCopy)
-	remoteJSON, _ := json.Marshal(remoteCopy)
-
-	changes.NeedsUpdate = string(localJSON) != string(remoteJSON)
+	changes.NeedsUpdate = cmd.DetectWorkflowDrift(remoteCopy, localCopy, true)
 
 	if local.Active != nil && remote.Active != nil {
 		if *local.Active && !*remote.Active {
