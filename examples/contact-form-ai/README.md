@@ -176,6 +176,23 @@ task setup-env
 
 5. **Webhook Response**: A success message is returned to the user's browser.
 
+## Testing with Example Data
+
+The workflow includes an Example Data node to help you test without needing to submit actual form data:
+
+1. Open the workflow in n8n
+2. Disable the Webhook node (click on it and toggle "Active" off)
+3. Enable the Example Data node (it's disabled by default)
+4. Run the workflow manually by clicking the "Execute Workflow" button
+
+The Example Data node provides three test cases:
+
+- A support request with neutral sentiment
+- A positive feedback message
+- A complaint with negative sentiment
+
+This allows you to see how the AI processes different types of messages and generates different response suggestions.
+
 ## Customizing the AI Prompt
 
 You can customize how the AI processes the contact form messages by editing the prompt in the OpenAI node:
