@@ -222,6 +222,41 @@ func (c *Client) UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error
 	return &w, nil
 }
 
+// GetWorkflow fetches a single workflow by its ID
+func (c *Client) GetWorkflow(id string) (*Workflow, error) {
+	url := fmt.Sprintf("%s/workflows/%s", c.baseURL, id)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var workflow Workflow
+	if err := json.NewDecoder(resp.Body).Decode(&workflow); err != nil {
+		return nil, err
+	}
+
+	return &workflow, nil
+}
+
 // DeleteWorkflow deletes a workflow by ID
 func (c *Client) DeleteWorkflow(id string) error {
 	url := fmt.Sprintf("%s/workflows/%s", c.baseURL, id)
