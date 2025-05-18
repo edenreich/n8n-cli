@@ -44,13 +44,13 @@ var SyncCmd = &cobra.Command{
 Examples:
 
   # Sync all workflow files from a directory
-  n8n-cli workflows sync --directory workflows/
+  n8n workflows sync --directory workflows/
 
   # Preview changes without applying them
-  n8n-cli workflows sync --directory workflows/ --dry-run
+  n8n workflows sync --directory workflows/ --dry-run
 
   # Sync and remove workflows that don't exist locally
-  n8n-cli workflows sync --directory workflows/ --prune
+  n8n workflows sync --directory workflows/ --prune
 
 This command processes JSON and YAML workflow files and ensures they exist on your n8n instance:
 
@@ -73,18 +73,18 @@ This command processes JSON and YAML workflow files and ensures they exist on yo
 
 4. Additional examples:
    - Deploy workflows to production: 
-     n8n-cli workflows sync --directory workflows/production/
+     n8n workflows sync --directory workflows/production/
 
    - Migrate between environments (dev to staging):
-     n8n-cli workflows sync --directory workflows/dev/ --prune
+     n8n workflows sync --directory workflows/dev/ --prune
 
    - Back up before a major change:
      mkdir -p backups/$(date +%Y%m%d) && \
-     n8n-cli workflows refresh --directory backups/$(date +%Y%m%d)/ --format json
+     n8n workflows refresh --directory backups/$(date +%Y%m%d)/ --format json
 
    - In CI/CD pipelines:
-     n8n-cli workflows sync --directory workflows/ --dry-run && \
-     n8n-cli workflows sync --directory workflows/
+     n8n workflows sync --directory workflows/ --dry-run && \
+     n8n workflows sync --directory workflows/
 
 5. Options:
    - Use --dry-run to preview changes without applying them
