@@ -94,7 +94,9 @@ This command processes JSON and YAML workflow files and ensures they exist on yo
 5. Options:
    - Use --dry-run to preview changes without applying them
    - Use --prune to remove remote workflows that don't exist locally
-   - Use --refresh=false to prevent refreshing local files with remote state after sync`,
+   - Use --refresh=false to prevent refreshing local files with remote state after sync
+   - Use --output to specify the format (json or yaml) for refreshed workflow files
+   - Use --all to refresh all workflows from n8n instance, not just those in the directory`,
 	RunE: SyncWorkflows,
 }
 
@@ -105,6 +107,8 @@ func init() {
 	SyncCmd.Flags().Bool("dry-run", false, "Show what would be uploaded without making changes")
 	SyncCmd.Flags().Bool("prune", false, "Remove workflows that are not present in the directory")
 	SyncCmd.Flags().Bool("refresh", true, "Refresh the local state with the remote state")
+	SyncCmd.Flags().StringP("output", "o", "", "Output format for refreshed workflow files (json or yaml). If not specified, uses the existing file extension in the directory")
+	SyncCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance when refreshing, not just those in the directory")
 
 	// nolint:errcheck
 	SyncCmd.MarkFlagRequired("directory")
@@ -117,6 +121,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	prune, _ := cmd.Flags().GetBool("prune")
 	refresh, _ := cmd.Flags().GetBool("refresh")
+	all, _ := cmd.Flags().GetBool("all")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
@@ -169,8 +174,13 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		noTruncate := false
 		minimal := !noTruncate
 		overwrite := true
+		output, _ := cmd.Flags().GetString("output")
 
-		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, "", minimal, true); err != nil {
+		if output == "" {
+			cmd.Println("No output format specified, maintaining existing file formats")
+		}
+
+		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, output, minimal, all); err != nil {
 			return fmt.Errorf("error refreshing workflows after sync: %w", err)
 		}
 

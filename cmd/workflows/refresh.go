@@ -75,7 +75,6 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 
 	client := n8n.NewClient(instanceURL, apiKey)
 
-	// Invert noTruncate flag to maintain backwards compatibility with the former minimal flag
 	minimal := !noTruncate
 
 	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal, all)
@@ -187,6 +186,16 @@ func extractLocalWorkflows(directory string) (map[string]string, error) {
 			continue
 		}
 
+		if existingPath, exists := localFiles[workflowID]; exists {
+			existingExt := strings.ToLower(filepath.Ext(existingPath))
+			currentExt := strings.ToLower(filepath.Ext(filePath))
+
+			if (currentExt == ".yaml" || currentExt == ".yml") && existingExt == ".json" {
+				localFiles[workflowID] = filePath
+			}
+			continue
+		}
+
 		localFiles[workflowID] = filePath
 	}
 
@@ -196,8 +205,15 @@ func extractLocalWorkflows(directory string) (map[string]string, error) {
 // determineFilePathAndAction decides what file path and action to take for a workflow
 func determineFilePathAndAction(workflow n8n.Workflow, localFiles map[string]string, directory string, output string, overwrite bool) (string, string) {
 	sanitizedName := rootcmd.SanitizeFilename(workflow.Name)
+
 	extension := ".json"
-	if strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml" {
+
+	if existingPath, exists := localFiles[*workflow.Id]; exists && output == "" {
+		existingExt := strings.ToLower(filepath.Ext(existingPath))
+		if existingExt == ".yaml" || existingExt == ".yml" {
+			extension = existingExt
+		}
+	} else if strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml" {
 		extension = ".yaml"
 	}
 
