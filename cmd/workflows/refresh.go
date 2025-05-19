@@ -242,9 +242,6 @@ func workflowNeedsUpdate(filePath string, existingPath string, content []byte, m
 	return rootcmd.DetectWorkflowDrift(existingWorkflow, newWorkflow, minimal)
 }
 
-// Both compareYAMLContent and compareJSONContent functions have been replaced
-// by the DetectWorkflowDrift utility function in the cmd package
-
 // processWorkflow handles processing of a single workflow
 func processWorkflow(cmd *cobra.Command, workflow n8n.Workflow, localFiles map[string]string,
 	directory string, dryRun bool, overwrite bool, output string, minimal bool) error {
