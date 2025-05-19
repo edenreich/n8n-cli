@@ -54,6 +54,9 @@ Examples:
   # Sync and remove workflows that don't exist locally
   n8n workflows sync --directory workflows/ --prune
 
+  # Sync without refreshing local files afterward
+  n8n workflows sync --directory workflows/ --refresh=false
+
 This command processes JSON and YAML workflow files and ensures they exist on your n8n instance:
 
 1. Each workflow file is processed intelligently:
@@ -90,7 +93,8 @@ This command processes JSON and YAML workflow files and ensures they exist on yo
 
 5. Options:
    - Use --dry-run to preview changes without applying them
-   - Use --prune to remove remote workflows that don't exist locally`,
+   - Use --prune to remove remote workflows that don't exist locally
+   - Use --refresh=false to prevent refreshing local files with remote state after sync`,
 	RunE: SyncWorkflows,
 }
 
@@ -100,6 +104,7 @@ func init() {
 	SyncCmd.Flags().StringP("directory", "d", "", "Directory containing workflow files (JSON/YAML) (required)")
 	SyncCmd.Flags().Bool("dry-run", false, "Show what would be uploaded without making changes")
 	SyncCmd.Flags().Bool("prune", false, "Remove workflows that are not present in the directory")
+	SyncCmd.Flags().Bool("refresh", true, "Refresh the local state with the remote state")
 
 	// nolint:errcheck
 	SyncCmd.MarkFlagRequired("directory")
@@ -111,6 +116,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	directory, _ := cmd.Flags().GetString("directory")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	prune, _ := cmd.Flags().GetBool("prune")
+	refresh, _ := cmd.Flags().GetBool("refresh")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
@@ -127,6 +133,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	client := n8n.NewClient(instanceURL, apiKey)
 
 	localWorkflowIDs := make(map[string]bool)
+	updatedWorkflows := make(map[string]bool)
 
 	for _, file := range files {
 		if !file.IsDir() {
@@ -138,8 +145,13 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 					localWorkflowIDs[workflowID] = true
 				}
 
-				if err = ProcessWorkflowFile(client, cmd, filePath, dryRun, prune); err != nil {
+				result, err := ProcessWorkflowFile(client, cmd, filePath, dryRun, prune)
+				if err != nil {
 					return fmt.Errorf("error processing workflow file %s: %w", filePath, err)
+				}
+
+				if result.WorkflowID != "" {
+					updatedWorkflows[result.WorkflowID] = true
 				}
 			}
 		}
@@ -151,19 +163,44 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	if refresh && !dryRun && len(updatedWorkflows) > 0 {
+		cmd.Println("Refreshing local workflow files with remote state...")
+
+		minimal := true
+		overwrite := true
+
+		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, "", minimal); err != nil {
+			return fmt.Errorf("error refreshing workflows after sync: %w", err)
+		}
+
+		cmd.Println("Local workflow files updated successfully with remote state")
+	}
+
 	return nil
 }
 
+// WorkflowResult contains the result of processing a workflow file
+type WorkflowResult struct {
+	WorkflowID string
+	Name       string
+	FilePath   string
+	Created    bool
+	Updated    bool
+}
+
 // ProcessWorkflowFile processes a workflow file and uploads it to n8n
-func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePath string, dryRun bool, prune bool) error {
+func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePath string, dryRun bool, prune bool) (WorkflowResult, error) {
 	var workflow n8n.Workflow
 	var err error
+	result := WorkflowResult{
+		FilePath: filePath,
+	}
 
 	logger.Debug("Processing file: %s", filePath)
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("error reading file: %w", err)
+		return result, fmt.Errorf("error reading file: %w", err)
 	}
 
 	logger.Debug("File size: %d bytes", len(content))
@@ -183,7 +220,7 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		logger.Debug("Parsing as JSON: %s", filename)
 		if err = json.Unmarshal(content, &workflow); err != nil {
 			logger.Debug("JSON parsing error: %v", err)
-			return fmt.Errorf("error parsing JSON workflow: %w", err)
+			return result, fmt.Errorf("error parsing JSON workflow: %w", err)
 		}
 	case ".yaml", ".yml":
 		logger.Debug("Parsing as YAML: %s", filename)
@@ -192,11 +229,13 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		workflow, err = decoder.DecodeFromYAML(content)
 		if err != nil {
 			logger.Debug("YAML parsing error: %v", err)
-			return fmt.Errorf("error parsing YAML workflow: %w", err)
+			return result, fmt.Errorf("error parsing YAML workflow: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported file format: %s", ext)
+		return result, fmt.Errorf("unsupported file format: %s", ext)
 	}
+
+	result.Name = workflow.Name
 
 	var w *n8n.Workflow
 	var remoteWorkflow *n8n.Workflow
@@ -213,11 +252,12 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 				if err != nil {
 					return "", fmt.Errorf("error creating workflow: %w", err)
 				}
+				result.Created = true
 				return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
 			})
 
 			if err != nil {
-				return err
+				return result, err
 			}
 		} else {
 			changes := DetectWorkflowChanges(&workflow, remoteWorkflow)
@@ -231,11 +271,12 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 					if err != nil {
 						return "", fmt.Errorf("error updating workflow: %w", err)
 					}
+					result.Updated = true
 					return fmt.Sprintf("Updated workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
 				})
 
 				if err != nil {
-					return err
+					return result, err
 				}
 			} else {
 				w = remoteWorkflow
@@ -255,11 +296,12 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 			if err != nil {
 				return "", fmt.Errorf("error creating workflow: %w", err)
 			}
+			result.Created = true
 			return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
 		})
 
 		if err != nil {
-			return err
+			return result, err
 		}
 	}
 
@@ -283,6 +325,7 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 
 		if w.Id != nil {
 			workflowID = *w.Id
+			result.WorkflowID = workflowID
 		}
 
 		if w.Name != "" {
@@ -309,7 +352,7 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 				})
 
 				if err != nil {
-					return err
+					return result, err
 				}
 			} else if !*workflow.Active && changes.NeedsDeactivation {
 				dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
@@ -323,19 +366,19 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 				})
 
 				if err != nil {
-					return err
+					return result, err
 				}
 			}
 		}
 
 		if changes.NeedsTagsUpdate && workflow.Tags != nil && len(*workflow.Tags) > 0 {
 			if err := HandleTagUpdates(client, cmd, &workflow, workflowID, dryRun); err != nil {
-				return err
+				return result, err
 			}
 		}
 	}
 
-	return nil
+	return result, nil
 }
 
 // ExtractWorkflowIDFromFile reads a workflow file and extracts the workflow ID if present
