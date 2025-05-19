@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0](https://github.com/edenreich/n8n-cli/compare/v0.4.0...v0.5.0) (2025-05-19)
+
+### ✨ Features
+
+* **workflows-sync:** Add --refresh flag to sync command and improve refresh functionality ([#21](https://github.com/edenreich/n8n-cli/issues/21)) ([e36a284](https://github.com/edenreich/n8n-cli/commit/e36a284b512f39b664341cd65db9802187b1b9aa))
+
+### 📚 Documentation
+
+* **examples:** Add AI-Enhanced Contact Form Example with n8n Integration ([#16](https://github.com/edenreich/n8n-cli/issues/16)) ([24f18d6](https://github.com/edenreich/n8n-cli/commit/24f18d61095f0e85d21be180cdffa5c7916414c9))
+
+### 🔧 Miscellaneous
+
+* **docs:** Correct filename for AI-enhanced n8n workflow definition in README ([166c951](https://github.com/edenreich/n8n-cli/commit/166c9517d935e9cc642e564c2353b6f71467c5b1))
+
 ## [0.4.0](https://github.com/edenreich/n8n-cli/compare/v0.3.1...v0.4.0) (2025-05-19)
 
 ### ✨ Features
