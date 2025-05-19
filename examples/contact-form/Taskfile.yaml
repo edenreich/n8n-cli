@@ -25,6 +25,12 @@ tasks:
       - echo "Refreshing workflows from n8n instance..."
       - n8n workflows refresh --directory {{.WORKFLOW_DIR}}/ --output yaml
 
+  refresh-all:
+    desc: Refresh all workflows from n8n instance (including new ones)
+    cmds:
+      - echo "Refreshing all workflows from n8n instance..."
+      - n8n workflows refresh --directory {{.WORKFLOW_DIR}}/ --output yaml --all
+
   list:
     desc: List workflows from n8n instance
     cmds:

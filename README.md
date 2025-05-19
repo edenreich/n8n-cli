@@ -152,13 +152,17 @@ Options:
 - `--dry-run`: Show what would be updated without making changes
 - `--overwrite`: Overwrite existing files even if they have a different name
 - `--output, -o`: Output format for new workflow files (json or yaml)
-- `--minimal`: Minimize workflow files by removing null and optional fields (default: true).
+- `--minimal`: Minimize workflow files by removing null and optional fields (default: true)
+- `--all`: Refresh all workflows from n8n instance, not just those in the directory.
 
-Example:
+Examples:
 
 ```bash
-# Refresh all workflows to local files
+# Refresh only existing workflows in the directory
 n8n workflows refresh --directory workflows/
+
+# Refresh all workflows from n8n instance (including new ones)
+n8n workflows refresh --directory workflows/ --all
 
 # Preview what would be refreshed without making changes
 n8n workflows refresh --directory workflows/ --dry-run

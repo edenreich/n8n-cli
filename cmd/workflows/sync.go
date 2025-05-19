@@ -169,7 +169,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		minimal := true
 		overwrite := true
 
-		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, "", minimal); err != nil {
+		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, "", minimal, true); err != nil {
 			return fmt.Errorf("error refreshing workflows after sync: %w", err)
 		}
 
