@@ -39,7 +39,7 @@ This example includes:
 │   └── workflows/
 │       └── sync-n8n.yml     # GitHub Actions workflow for automation
 ├── workflows/
-│   └── AI_Contact_Form.yaml # AI-enhanced n8n workflow definition
+│   └── Contact_Form_AI.yaml # AI-enhanced n8n workflow definition
 ├── .env.example             # Example environment configuration
 ├── contact-form-ai.html     # AI-enhanced HTML contact form
 ├── Taskfile.yaml            # Task definitions for common operations
