@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1](https://github.com/edenreich/n8n-cli/compare/v0.5.0...v0.5.1) (2025-05-19)
+
+### ♻️ Improvements
+
+* **sync:** Enhance sync command with output format and all workflows refresh options ([#22](https://github.com/edenreich/n8n-cli/issues/22)) ([5ba967c](https://github.com/edenreich/n8n-cli/commit/5ba967c0ccd7d5ad659a64c59b873dad0d75dd2c))
+
 ## [0.5.0](https://github.com/edenreich/n8n-cli/compare/v0.4.0...v0.5.0) (2025-05-19)
 
 ### ✨ Features
