@@ -29,7 +29,7 @@ func TestSyncWorkflows_Refresh(t *testing.T) {
 			name:           "Default behavior (refresh=true)",
 			refreshFlag:    true,
 			expectIDInFile: true,
-			args:           []string{"--directory"},
+			args:           []string{"--directory", "", "--output", "json", "--all"},
 		},
 		{
 			name:           "Explicit refresh=false",
@@ -58,11 +58,26 @@ func TestSyncWorkflows_Refresh(t *testing.T) {
 			inactive := false
 			noIDWorkflow.Active = &inactive
 
+			// Create a JSON workflow
 			noIDWorkflowBytes, err := json.MarshalIndent(noIDWorkflow, "", "  ")
 			require.NoError(t, err)
-
 			noIDFilePath := filepath.Join(tmpDir, "new_workflow.json")
 			require.NoError(t, os.WriteFile(noIDFilePath, noIDWorkflowBytes, 0644))
+
+			// Create a YAML workflow
+			yamlWorkflow := n8n.Workflow{
+				Name:        "YAML Workflow",
+				Nodes:       []n8n.Node{},
+				Connections: map[string]interface{}{},
+				Settings:    n8n.WorkflowSettings{},
+			}
+			yamlWorkflow.Active = &inactive
+
+			encoder := n8n.NewWorkflowEncoder(true)
+			yamlBytes, err := encoder.EncodeToYAML(yamlWorkflow)
+			require.NoError(t, err)
+			yamlFilePath := filepath.Join(tmpDir, "yaml_workflow.yaml")
+			require.NoError(t, os.WriteFile(yamlFilePath, yamlBytes, 0644))
 
 			nonexistentID := "nonexistent-id"
 			nonExistentWorkflow := n8n.Workflow{
@@ -214,14 +229,19 @@ func TestSyncWorkflows_Refresh(t *testing.T) {
 			viper.Set("instance_url", server.URL)
 			defer viper.Reset()
 
-			var args []string
-			if tc.refreshFlag {
-				args = []string{"--directory", tmpDir}
-			} else {
-				args = []string{"--directory", tmpDir, "--refresh=false"}
+			args := make([]string, len(tc.args))
+			copy(args, tc.args)
+
+			// Replace empty directory with the actual temp directory
+			for i, arg := range args {
+				if arg == "--directory" && i+1 < len(args) && args[i+1] == "" {
+					args[i+1] = tmpDir
+				}
 			}
 
 			stdout, stderr, err := executeCommand(t, workflows.SyncCmd, args...)
+			t.Logf("Command output: %s", stdout)
+			t.Logf("Command stderr: %s", stderr)
 			assert.NoError(t, err, "Command should succeed: %s\nstderr: %s", stdout, stderr)
 
 			if !tc.expectIDInFile {
@@ -249,22 +269,41 @@ func TestSyncWorkflows_Refresh(t *testing.T) {
 
 				idUpdated := false
 
+				t.Logf("Files in directory after sync: %d files", len(files))
+
 				for _, file := range files {
 					if file.IsDir() {
 						continue
 					}
 
 					filePath := filepath.Join(tmpDir, file.Name())
+					t.Logf("Checking file: %s", filePath)
+
 					content, err := os.ReadFile(filePath)
 					require.NoError(t, err)
+					t.Logf("File content length: %d bytes", len(content))
 
+					// Check if it's JSON or YAML and parse accordingly
 					var workflow n8n.Workflow
-					err = json.Unmarshal(content, &workflow)
+					if strings.HasSuffix(strings.ToLower(filePath), ".yaml") || strings.HasSuffix(strings.ToLower(filePath), ".yml") {
+						decoder := n8n.NewWorkflowDecoder()
+						workflow, err = decoder.DecodeFromYAML(content)
+						t.Logf("Parsed YAML workflow with name: %s", workflow.Name)
+					} else {
+						err = json.Unmarshal(content, &workflow)
+						t.Logf("Parsed JSON workflow with name: %s", workflow.Name)
+					}
 					require.NoError(t, err)
 
-					if workflow.Id != nil && strings.HasPrefix(*workflow.Id, "generated-id-") {
-						idUpdated = true
-						break
+					if workflow.Id != nil {
+						t.Logf("Workflow ID: %s", *workflow.Id)
+						if strings.HasPrefix(*workflow.Id, "generated-id-") {
+							idUpdated = true
+							t.Logf("Found updated ID: %s", *workflow.Id)
+							break
+						}
+					} else {
+						t.Logf("Workflow has nil ID")
 					}
 				}
 
