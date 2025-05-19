@@ -1,42 +1,43 @@
 ---
 active: false
 connections:
-  Email Response Structure:
-    ai_outputParser:
+  AI Summary Agent:
+    main:
       - - index: 0
-          node: Summary AI Agent
-          type: ai_outputParser
+          node: Send Email
+          type: main
   Groq Chat Model:
     ai_languageModel:
       - - index: 0
-          node: Summary AI Agent
+          node: AI Summary Agent
           type: ai_languageModel
   Sample Data:
     main:
       - - index: 0
-          node: Summary AI Agent
+          node: AI Summary Agent
           type: main
   Send Email:
     main:
       - - index: 0
           node: Respond to Webhook
           type: main
-  Summary AI Agent:
-    main:
+  Structured Output Parser:
+    ai_outputParser:
       - - index: 0
-          node: Send Email
-          type: main
+          node: AI Summary Agent
+          type: ai_outputParser
   Webhook:
     main:
       - - index: 0
-          node: Summary AI Agent
+          node: AI Summary Agent
           type: main
   When clicking ‘Test workflow’:
     main:
       - - index: 0
           node: Sample Data
           type: main
-name: AI Contact Form
+id: 6kvfv4xdAFVYisbY
+name: Contact Form AI
 nodes:
   - id: 26476cd4-4435-4887-b419-ea2aaf703fd3
     name: Webhook
@@ -51,14 +52,14 @@ nodes:
       - -2020
       - -840
     type: n8n-nodes-base.webhook
-    webhookId: e2103bd1-93dc-45b0-835a-50d87daa3ae1
+    webhookId: 48b804af-ddb9-45f3-a07e-3345759e6824
   - id: 776bb126-2715-4b6c-90c6-356624500d84
     name: Respond to Webhook
     parameters:
       options:
         responseCode: 200
     position:
-      - -1200
+      - -1140
       - -940
     type: n8n-nodes-base.respondToWebhook
   - credentials:
@@ -70,6 +71,7 @@ nodes:
     parameters:
       emailFormat: text
       fromEmail: info@eden-reich.com
+      options: {}
       subject: ==New AI-Analyzed Contact from {{ $node["Sample Data"].json.body.name }}
       text: |-
         ==New Contact Form Submission (AI-Analyzed)
@@ -82,52 +84,20 @@ nodes:
 
         AI Analysis:
         ------------
-        {{ $node["Summary AI Agent"].json.aiSummary }}
+        {{ $node["AI Summary Agent"].json.aiSummary }}
 
         Response Suggestion:
         ------------------
-        {{ $node["Summary AI Agent"].json.responseSuggestion }}
+        {{ $node["AI Summary Agent"].json.responseSuggestion }}
 
         ---
         This message was processed by AI and sent from your website contact form.
       toEmail: eden.reich@gmail.com
     position:
-      - -1420
+      - -1360
       - -940
     type: n8n-nodes-base.emailSend
-    typeVersion: 2.1
-    webhookId: 1f2bb54e-e3aa-4b15-88fa-1426f4e66b82
-  - id: e93e6fc6-1fac-4e51-a828-d1c49b0c8020
-    name: Summary AI Agent
-    parameters:
-      hasOutputParser: true
-      options:
-        systemMessage: =You are a customer service AI assistant. You're analyzing a contact form submission.
-      promptType: define
-      text: |-
-        =User's information:
-        Name: {{ $json.body.name }}
-        Email: {{ $json.body.email }}
-        Message: {{ $json.body.message }}
-
-        Please provide:
-        1. A concise summary of the customer's message (max 3 sentences)
-        2. A categorization of the message (question, complaint, feedback, request, etc.)
-        3. The general sentiment of the message (positive, neutral, negative)
-        4. A suggested response to the customer
-
-        Format your response as a JSON with these keys:
-        {
-          "aiSummary": "...",
-          "category": "...",
-          "sentiment": "...",
-          "responseSuggestion": "..."
-        }
-    position:
-      - -1800
-      - -940
-    type: '@n8n/n8n-nodes-langchain.agent'
-    typeVersion: 1.9
+    webhookId: 4e0ddb20-0bae-4e50-b0d2-d69777d7619d
   - credentials:
       groqApi:
         id: 3iRclTuYupCAu4jX
@@ -136,26 +106,11 @@ nodes:
     name: Groq Chat Model
     parameters:
       model: deepseek-r1-distill-llama-70b
+      options: {}
     position:
-      - -1820
+      - -1800
       - -720
     type: '@n8n/n8n-nodes-langchain.lmChatGroq'
-    typeVersion: 1
-  - id: 7f2cbd62-cbb3-4c76-8304-870abaac84de
-    name: Email Response Structure
-    parameters:
-      jsonSchemaExample: |-
-        {
-        	"aiSummary": "...",
-        	"category": "...",
-            "sentiment": "...",
-            "responseSuggestion": "..."
-        }
-    position:
-      - -1620
-      - -720
-    type: '@n8n/n8n-nodes-langchain.outputParserStructured'
-    typeVersion: 1.2
   - id: db663cd0-805c-4608-88e7-20adef11f318
     name: Sample Data
     parameters:
@@ -170,15 +125,63 @@ nodes:
           }
         }
       mode: raw
+      options: {}
     position:
       - -2020
       - -1040
     type: n8n-nodes-base.set
-    typeVersion: 3.4
   - id: 92f077af-e775-4ba7-8cb6-00b162861a7d
     name: When clicking ‘Test workflow’
+    parameters: {}
     position:
       - -2240
       - -1040
     type: n8n-nodes-base.manualTrigger
-    typeVersion: 1
+  - id: 788c36de-40d4-4559-a2bf-91b94f9aaded
+    name: AI Summary Agent
+    parameters:
+      hasOutputParser: true
+      options:
+        systemMessage: |-
+          =User's information:
+          Name: {{ $json.body.name }}
+          Email: {{ $json.body.email }}
+          Message: {{ $json.body.message }}
+
+          Please provide:
+          1. A concise summary of the customer's message (max 3 sentences)
+          2. A categorization of the message (question, complaint, feedback, request, etc.)
+          3. The general sentiment of the message (positive, neutral, negative)
+          4. A suggested response to the customer
+
+          Format your response as a JSON with these keys:
+          {
+            "aiSummary": "...",
+            "category": "...",
+            "sentiment": "...",
+            "responseSuggestion": "..."
+          }
+      promptType: define
+      text: You are a customer service AI assistant. You're analyzing a contact form submission.
+    position:
+      - -1768
+      - -940
+    type: '@n8n/n8n-nodes-langchain.agent'
+    typeVersion: 1.9
+  - id: 543630e5-76c5-4edb-95ed-ed1358ffa898
+    name: Structured Output Parser
+    parameters:
+      jsonSchemaExample: |-
+        {
+          "aiSummary": "...",
+          "category": "...",
+          "sentiment": "...",
+          "responseSuggestion": "..."
+        }
+    position:
+      - -1560
+      - -720
+    type: '@n8n/n8n-nodes-langchain.outputParserStructured'
+    typeVersion: 1.2
+settings: {}
+tags: []
