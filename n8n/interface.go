@@ -19,6 +19,10 @@ type ClientInterface interface {
 	UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error)
 	// DeleteWorkflow deletes a workflow by its ID
 	DeleteWorkflow(id string) error
+	// GetWorkflowTags fetches the tags of a workflow by its ID
+	GetWorkflowTags(id string) (WorkflowTags, error)
+	// UpdateWorkflowTags updates the tags of a workflow by its ID
+	UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, error)
 }
 
 // Ensure Client implements ClientInterface

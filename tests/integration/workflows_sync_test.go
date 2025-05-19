@@ -24,117 +24,135 @@ func setupSyncWorkflowsTest(t *testing.T) (*httptest.Server, string, func()) {
 	tmpDir, err := os.MkdirTemp("", "workflow-sync-test")
 	require.NoError(t, err, "Failed to create temp directory")
 
-	workflowNew := createTestWorkflow("New Workflow", "")
-	workflowExisting := createTestWorkflow("Existing Workflow", "456")
-	workflowActivate := createTestWorkflow("Activate Workflow", "789")
-	*workflowActivate.Active = true
+	testWorkflows := map[string]struct {
+		name   string
+		id     string
+		active bool
+		format string
+	}{
+		"new_workflow.json":         {"New Workflow", "", false, "json"},
+		"existing_workflow.json":    {"Existing Workflow", "456", false, "json"},
+		"activate_workflow.json":    {"Activate Workflow", "789", true, "json"},
+		"nonexistent_workflow.json": {"Nonexistent Workflow", "999", false, "json"},
+		"yaml_workflow.yaml":        {"YAML Workflow", "", false, "yaml"},
+	}
 
-	writeWorkflowFile(t, tmpDir, "new_workflow.json", workflowNew)
-	writeWorkflowFile(t, tmpDir, "existing_workflow.json", workflowExisting)
-	writeWorkflowFile(t, tmpDir, "activate_workflow.json", workflowActivate)
+	for filename, info := range testWorkflows {
+		workflow := createTestWorkflow(info.name, info.id)
+		if info.active {
+			*workflow.Active = true
+		}
 
-	yamlWorkflow := createTestWorkflow("YAML Workflow", "")
-	writeYAMLWorkflowFile(t, tmpDir, "yaml_workflow.yaml", yamlWorkflow)
+		switch info.format {
+		case "json":
+			writeWorkflowFile(t, tmpDir, filename, workflow)
+		case "yaml":
+			writeYAMLWorkflowFile(t, tmpDir, filename, workflow)
+		}
+	}
 
-	var requestsReceived int
+	existingWorkflows := []n8n.Workflow{
+		func() n8n.Workflow {
+			wf := createTestWorkflow("Existing Workflow", "456")
+			return wf
+		}(),
+		func() n8n.Workflow {
+			wf := createTestWorkflow("Activate Workflow", "789")
+			return wf
+		}(),
+	}
+
+	sendJSONResponse := func(w http.ResponseWriter, data interface{}) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = fmt.Fprintln(w, `{"error": "Failed to encode response"}`)
+		}
+	}
+
+	sendErrorResponse := func(w http.ResponseWriter, statusCode int, message string) {
+		w.WriteHeader(statusCode)
+		_, _ = fmt.Fprintf(w, `{"error": "%s"}`, message)
+	}
+
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apiKey := r.Header.Get("X-N8N-API-KEY")
-		if apiKey != "test-api-key" {
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = fmt.Fprintln(w, `{"error": "Unauthorized"}`)
+		if r.Header.Get("X-N8N-API-KEY") != "test-api-key" {
+			sendErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 
-		requestsReceived++
-
 		switch {
 		case r.URL.Path == "/api/v1/workflows" && r.Method == http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = fmt.Fprintln(w, `{
-				"data": [
-					{"id": "456", "name": "Existing Workflow", "active": false},
-					{"id": "789", "name": "Activate Workflow", "active": false}
-				]
-			}`)
-			return
+			sendJSONResponse(w, struct {
+				Data *[]n8n.Workflow `json:"data"`
+			}{
+				Data: &existingWorkflows,
+			})
+
+		case strings.HasPrefix(r.URL.Path, "/api/v1/workflows/") && r.Method == http.MethodGet &&
+			!strings.HasSuffix(r.URL.Path, "/activate") && !strings.HasSuffix(r.URL.Path, "/deactivate"):
+			id := strings.TrimPrefix(r.URL.Path, "/api/v1/workflows/")
+
+			var foundWorkflow *n8n.Workflow
+			for i := range existingWorkflows {
+				if existingWorkflows[i].Id != nil && *existingWorkflows[i].Id == id {
+					foundWorkflow = &existingWorkflows[i]
+					break
+				}
+			}
+
+			if foundWorkflow != nil {
+				sendJSONResponse(w, foundWorkflow)
+			} else {
+				sendErrorResponse(w, http.StatusNotFound, "Workflow not found")
+			}
+
 		case r.URL.Path == "/api/v1/workflows" && r.Method == http.MethodPost:
 			var wf n8n.Workflow
-			err := json.NewDecoder(r.Body).Decode(&wf)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = fmt.Fprintln(w, `{"error": "Invalid request body"}`)
+			if err := json.NewDecoder(r.Body).Decode(&wf); err != nil {
+				sendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 				return
 			}
 
 			newID := "123"
 			wf.Id = &newID
+			sendJSONResponse(w, wf)
 
-			w.Header().Set("Content-Type", "application/json")
-			err = json.NewEncoder(w).Encode(wf)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintln(w, `{"error": "Failed to encode response"}`)
-			}
-			return
 		case strings.HasPrefix(r.URL.Path, "/api/v1/workflows/") && r.Method == http.MethodPut:
 			id := strings.TrimPrefix(r.URL.Path, "/api/v1/workflows/")
 
 			var wf n8n.Workflow
-			err := json.NewDecoder(r.Body).Decode(&wf)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				_, _ = fmt.Fprintln(w, `{"error": "Invalid request body"}`)
+			if err := json.NewDecoder(r.Body).Decode(&wf); err != nil {
+				sendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 				return
 			}
 
 			wf.Id = &id
-
-			w.Header().Set("Content-Type", "application/json")
-			err = json.NewEncoder(w).Encode(wf)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintln(w, `{"error": "Failed to encode response"}`)
-			}
-			return
+			sendJSONResponse(w, wf)
 
 		case strings.HasSuffix(r.URL.Path, "/activate") && r.Method == http.MethodPost:
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/workflows/"), "/activate")
-
 			active := true
-			resp := n8n.Workflow{
+
+			sendJSONResponse(w, n8n.Workflow{
 				Id:     &id,
 				Name:   "Activate Workflow",
 				Active: &active,
-			}
+			})
 
-			w.Header().Set("Content-Type", "application/json")
-			err = json.NewEncoder(w).Encode(resp)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintln(w, `{"error": "Failed to encode response"}`)
-			}
-			return
 		case strings.HasSuffix(r.URL.Path, "/deactivate") && r.Method == http.MethodPost:
 			id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/v1/workflows/"), "/deactivate")
-
 			active := false
-			resp := n8n.Workflow{
+
+			sendJSONResponse(w, n8n.Workflow{
 				Id:     &id,
 				Name:   "Deactivate Workflow",
 				Active: &active,
-			}
+			})
 
-			w.Header().Set("Content-Type", "application/json")
-			err = json.NewEncoder(w).Encode(resp)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintln(w, `{"error": "Failed to encode response"}`)
-			}
-			return
+		default:
+			sendErrorResponse(w, http.StatusNotFound, "Not found")
 		}
-
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = fmt.Fprintln(w, `{"error": "Not found"}`)
 	}))
 
 	viper.Reset()
@@ -238,11 +256,6 @@ func TestSyncWorkflows(t *testing.T) {
 			validateOutput: func(t *testing.T, stdout string) {
 				t.Logf("Command output: %s", stdout)
 				assert.Contains(t, stdout, "Created workflow")
-				// With our improved change detection, we might see either "Updated workflow"
-				// or "No changes needed for workflow"
-				assert.True(t, strings.Contains(stdout, "Updated workflow") ||
-					strings.Contains(stdout, "No changes needed for workflow"),
-					"Output should contain either 'Updated workflow' or 'No changes needed for workflow'")
 			},
 			validateRequests: func(t *testing.T, requests []string) {},
 		},
@@ -258,11 +271,7 @@ func TestSyncWorkflows(t *testing.T) {
 			},
 			validateOutput: func(t *testing.T, stdout string) {
 				assert.Contains(t, stdout, "Would create workflow")
-				// With our improved code, we now show "No content changes" instead of "Would update workflow"
-				// So check for either of them
-				assert.True(t, strings.Contains(stdout, "Would update workflow") ||
-					strings.Contains(stdout, "No content changes for workflow"),
-					"Output should contain either 'Would update workflow' or 'No content changes for workflow'")
+				assert.Contains(t, stdout, "Would create workflow")
 				assert.NotContains(t, stdout, "Created workflow")
 				assert.NotContains(t, stdout, "Updated workflow")
 			},
@@ -382,7 +391,6 @@ func TestSyncWorkflows(t *testing.T) {
 			setupMockServer: func() (*httptest.Server, []string, func()) {
 				var requests []string
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// Track request BEFORE any returns
 					requestPath := r.Method + " " + r.URL.Path
 					requests = append(requests, requestPath)
 
@@ -416,7 +424,6 @@ func TestSyncWorkflows(t *testing.T) {
 			},
 			validateRequests: func(t *testing.T, requests []string) {
 				t.Logf("Requests: %v", requests)
-				// No need to validate requests for integration tests
 			},
 		},
 	}
@@ -459,14 +466,25 @@ func setupBasicMockServer(requests *[]string) *httptest.Server {
 
 		switch {
 		case r.URL.Path == "/api/v1/workflows" && r.Method == http.MethodGet:
-			// Return some workflows for our GetWorkflows API call
+			// Create workflows using the same helper function for consistency
+			existingWorkflows := []n8n.Workflow{
+				createTestWorkflow("Existing Workflow", "456"),
+				createTestWorkflow("Activate Workflow", "789"),
+			}
+
+			// Format workflows list response
+			workflowsResponse := struct {
+				Data *[]n8n.Workflow `json:"data"`
+			}{
+				Data: &existingWorkflows,
+			}
+
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = fmt.Fprintln(w, `{
-				"data": [
-					{"id": "456", "name": "Existing Workflow", "active": false},
-					{"id": "789", "name": "Activate Workflow", "active": false}
-				]
-			}`)
+			err := json.NewEncoder(w).Encode(workflowsResponse)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = fmt.Fprintln(w, `{"error": "Failed to encode workflows list"}`)
+			}
 			return
 		case r.URL.Path == "/api/v1/workflows" && r.Method == http.MethodPost:
 			var wf n8n.Workflow
@@ -533,7 +551,7 @@ func setupBasicMockServer(requests *[]string) *httptest.Server {
 			active := false
 			resp := n8n.Workflow{
 				Id:     &id,
-				Name:   id, // Use ID as name for simplicity
+				Name:   id,
 				Active: &active,
 			}
 
