@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0-rc.2](https://github.com/edenreich/n8n-cli/compare/v0.4.0-rc.1...v0.4.0-rc.2) (2025-05-19)
+
+### 🐛 Bug Fixes
+
+* **encoder:** Change YAML indentation back to 2 spaces ([8115d5b](https://github.com/edenreich/n8n-cli/commit/8115d5bf236ec488cf027c1526781dc67cb77b3c))
+
+## [0.4.0-rc.1](https://github.com/edenreich/n8n-cli/compare/v0.3.1...v0.4.0-rc.1) (2025-05-19)
+
+### ✨ Features
+
+* **client:** Add GetWorkflowTags and UpdateWorkflowTags methods to manage workflow tags ([4ecf4de](https://github.com/edenreich/n8n-cli/commit/4ecf4de793aa23db1d4da003145893f77c3d676e))
+* **workflows:** add GetWorkflow method and corresponding tests on the client ([#17](https://github.com/edenreich/n8n-cli/issues/17)) ([7577f0b](https://github.com/edenreich/n8n-cli/commit/7577f0babbe8f35c76a5865a0aff1d662727ea07))
+* **workflows:** Implement tag management in workflow synchronization and add logging capabilities ([a62e2d6](https://github.com/edenreich/n8n-cli/commit/a62e2d68e7cf3bfea0d10818b727a29efbd30aa6)), closes [#19](https://github.com/edenreich/n8n-cli/issues/19)
+
+### ♻️ Improvements
+
+* **workflows-sync:** Enhance sync command documentation and improve test setup for workflows ([021072b](https://github.com/edenreich/n8n-cli/commit/021072bd49f6fea469581202c4bec2973248a611))
+* **workflows:** Implement workflow encoding and decoding with clean functionality and a drift detection using reflect deep equal for comparing two objects (actual with desired state) ([604ab8f](https://github.com/edenreich/n8n-cli/commit/604ab8fd766b89e1a699fa9388942c73b7511ac0))
+
+### 🐛 Bug Fixes
+
+* **sync:** Update command examples to use 'n8n' instead of 'n8n-cli' ([9fec9c5](https://github.com/edenreich/n8n-cli/commit/9fec9c581872f9931b9960a006e8cff6fb853489))
+
 ## [0.3.1](https://github.com/edenreich/n8n-cli/compare/v0.3.0...v0.3.1) (2025-05-17)
 
 ### 🐛 Bug Fixes
