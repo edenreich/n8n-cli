@@ -184,9 +184,12 @@ n8n workflows sync --directory workflows/
 
 Options:
 
-- `--directory, -d`: Directory containing workflow JSON files (required)
+- `--directory, -d`: Directory containing workflow JSON/YAML files (required)
 - `--dry-run`: Show what would be done without making changes
 - `--prune`: Remove workflows from the n8n instance that are not present in the local directory
+- `--refresh`: Refresh the local state with the remote state after sync (default: true)
+- `--output, -o`: Output format for refreshed workflow files (json or yaml). If not specified, uses the existing file extension in the directory
+- `--all`: Refresh all workflows from n8n instance when refreshing, not just those in the directory
 
 How the sync command handles workflow IDs:
 
@@ -208,6 +211,15 @@ n8n workflows sync --directory workflows/ --dry-run
 
 # Sync workflows and remove any remote workflows not in the local directory
 n8n workflows sync --directory workflows/ --prune
+
+# Sync workflows and refresh as JSON (overrides existing format)
+n8n workflows sync --directory workflows/ --output json
+
+# Sync workflows and refresh all workflows from n8n instance (including ones not in local directory)
+n8n workflows sync --directory workflows/ --all
+
+# Sync workflows without refreshing the local state afterward
+n8n workflows sync --directory workflows/ --refresh=false
 ```
 
 #### Activate
