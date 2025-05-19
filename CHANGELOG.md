@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/edenreich/n8n-cli/compare/v0.3.1...v0.4.0) (2025-05-19)
+
+### ✨ Features
+
+* **workflows:** add GetWorkflow method and corresponding tests on the client ([#17](https://github.com/edenreich/n8n-cli/issues/17)) ([7577f0b](https://github.com/edenreich/n8n-cli/commit/7577f0babbe8f35c76a5865a0aff1d662727ea07))
+
+### ♻️ Improvements
+
+* **workflows-sync:** Enhance sync command documentation and improve test setup for workflows ([#18](https://github.com/edenreich/n8n-cli/issues/18)) ([210b6b8](https://github.com/edenreich/n8n-cli/commit/210b6b869a2ff78b48c86d5187cf46f58baf9b4a)), closes [#19](https://github.com/edenreich/n8n-cli/issues/19)
+
+### 🔧 Miscellaneous
+
+* RC testing refactor improve the maintainability of sync command ([#20](https://github.com/edenreich/n8n-cli/issues/20)) ([3cbe4d2](https://github.com/edenreich/n8n-cli/commit/3cbe4d24140012e5756d0fc9c58ccaaf38e3f9d8)), closes [#19](https://github.com/edenreich/n8n-cli/issues/19)
+
 ## [0.4.0-rc.2](https://github.com/edenreich/n8n-cli/compare/v0.4.0-rc.1...v0.4.0-rc.2) (2025-05-19)
 
 ### 🐛 Bug Fixes
