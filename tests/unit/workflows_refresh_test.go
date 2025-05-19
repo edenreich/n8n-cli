@@ -440,7 +440,7 @@ active: true
 			cmd.Flags().Bool("dry-run", false, "Dry run")
 			cmd.Flags().Bool("overwrite", false, "Overwrite")
 			cmd.Flags().StringP("output", "o", "json", "Output format")
-			cmd.Flags().Bool("minimal", true, "Minimal output")
+			cmd.Flags().Bool("no-truncate", false, "Include all fields in output")
 			cmd.Flags().Bool("all", false, "Refresh all workflows")
 			cmd.SetOut(outBuf)
 			cmd.SetErr(errBuf)
@@ -464,7 +464,8 @@ active: true
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			overwrite, _ := cmd.Flags().GetBool("overwrite")
 			output, _ := cmd.Flags().GetString("output")
-			minimal, _ := cmd.Flags().GetBool("minimal")
+			noTruncate, _ := cmd.Flags().GetBool("no-truncate")
+			minimal := !noTruncate
 
 			all := false
 			for i := 0; i < len(tc.args); i++ {

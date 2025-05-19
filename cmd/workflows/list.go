@@ -57,7 +57,6 @@ var ListCmd = &cobra.Command{
 
 func init() {
 	ListCmd.Flags().StringVarP(&outputFormat, "output", "o", formatTable, "Output format: table, json, or yaml")
-	// TODO - implement pretty print (without created at and updated at and all the metadata that is not required for the client DTO)
 	rootcmd.GetWorkflowsCmd().AddCommand(ListCmd)
 }
 

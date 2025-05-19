@@ -48,7 +48,7 @@ func init() {
 	refreshCmd.Flags().Bool("dry-run", false, "Show what would be updated without making changes")
 	refreshCmd.Flags().Bool("overwrite", false, "Overwrite existing files even if they have a different name")
 	refreshCmd.Flags().StringP("output", "o", "json", "Output format for new workflow files (json or yaml)")
-	refreshCmd.Flags().Bool("minimal", true, "Minimize workflow files by removing null and optional fields")
+	refreshCmd.Flags().Bool("no-truncate", false, "Include all fields in output files, including null and optional fields")
 	refreshCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance, not just those in the directory")
 	rootcmd.GetWorkflowsCmd().AddCommand(refreshCmd)
 
@@ -63,7 +63,7 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	overwrite, _ := cmd.Flags().GetBool("overwrite")
 	output, _ := cmd.Flags().GetString("output")
-	minimal, _ := cmd.Flags().GetBool("minimal")
+	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	all, _ := cmd.Flags().GetBool("all")
 
 	if directory == "" {
@@ -74,6 +74,9 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 	instanceURL := viper.Get("instance_url").(string)
 
 	client := n8n.NewClient(instanceURL, apiKey)
+
+	// Invert noTruncate flag to maintain backwards compatibility with the former minimal flag
+	minimal := !noTruncate
 
 	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal, all)
 }

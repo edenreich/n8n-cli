@@ -166,7 +166,8 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	if refresh && !dryRun && len(updatedWorkflows) > 0 {
 		cmd.Println("Refreshing local workflow files with remote state...")
 
-		minimal := true
+		noTruncate := false
+		minimal := !noTruncate
 		overwrite := true
 
 		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, "", minimal, true); err != nil {
