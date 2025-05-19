@@ -231,6 +231,164 @@ active: true
 				assert.False(t, hasUpdatedAt, "updatedAt should be excluded from the workflow")
 			},
 		},
+		{
+			name: "Only refreshes existing workflows when --all is not specified",
+			args: []string{"--directory", tempDir},
+			mockResponses: &n8n.WorkflowList{
+				Data: &[]n8n.Workflow{
+					{
+						Id:     stringPtr("existing123"),
+						Name:   "Existing Workflow",
+						Active: boolPtr(true),
+					},
+					{
+						Id:     stringPtr("nonexisting456"),
+						Name:   "Non-Existing Workflow",
+						Active: boolPtr(false),
+					},
+				},
+			},
+			mockError:      nil,
+			expectedOutput: "Refreshing only workflows that exist in the directory",
+			expectError:    false,
+			setupFiles: func(t *testing.T, dir string) {
+				// Create a file for the "existing123" workflow
+				filePath := filepath.Join(dir, "Existing_Workflow.json")
+				workflow := n8n.Workflow{
+					Id:     stringPtr("existing123"),
+					Name:   "Existing Workflow",
+					Active: boolPtr(false), // We'll set it to false so we can detect the update
+				}
+
+				encoder := n8n.NewWorkflowEncoder(true)
+				content, err := encoder.EncodeToJSON(workflow)
+				require.NoError(t, err)
+
+				err = os.WriteFile(filePath, content, 0644)
+				require.NoError(t, err)
+			},
+			validateFiles: func(t *testing.T, dir string) {
+				// The existing workflow should be updated
+				existingPath := filepath.Join(dir, "Existing_Workflow.json")
+				content, err := os.ReadFile(existingPath)
+				require.NoError(t, err)
+
+				var workflow map[string]interface{}
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				assert.Equal(t, true, workflow["active"], "Existing workflow should be updated to active=true")
+
+				// The non-existing workflow should not be created
+				nonExistingPath := filepath.Join(dir, "Non-Existing_Workflow.json")
+				_, err = os.Stat(nonExistingPath)
+				assert.True(t, os.IsNotExist(err), "Non-existing workflow should not be created without --all flag")
+			},
+		},
+		{
+			name: "Refreshes all workflows when --all flag is specified",
+			args: []string{"--directory", tempDir, "--all"},
+			mockResponses: &n8n.WorkflowList{
+				Data: &[]n8n.Workflow{
+					{
+						Id:     stringPtr("existing123"),
+						Name:   "Existing Workflow",
+						Active: boolPtr(true),
+					},
+					{
+						Id:     stringPtr("nonexisting456"),
+						Name:   "Non-Existing Workflow",
+						Active: boolPtr(true),
+					},
+				},
+			},
+			mockError:      nil,
+			expectedOutput: "Refreshing all workflows from n8n instance",
+			expectError:    false,
+			setupFiles: func(t *testing.T, dir string) {
+				filePath := filepath.Join(dir, "Existing_Workflow.json")
+				workflow := n8n.Workflow{
+					Id:     stringPtr("existing123"),
+					Name:   "Existing Workflow",
+					Active: boolPtr(false),
+				}
+
+				encoder := n8n.NewWorkflowEncoder(true)
+				content, err := encoder.EncodeToJSON(workflow)
+				require.NoError(t, err)
+
+				err = os.WriteFile(filePath, content, 0644)
+				require.NoError(t, err)
+			},
+			validateFiles: func(t *testing.T, dir string) {
+				existingPath := filepath.Join(dir, "Existing_Workflow.json")
+				content, err := os.ReadFile(existingPath)
+				require.NoError(t, err)
+
+				var workflow map[string]interface{}
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				assert.Equal(t, true, workflow["active"], "Existing workflow should be updated to active=true")
+
+				nonExistingPath := filepath.Join(dir, "Non-Existing_Workflow.json")
+				content, err = os.ReadFile(nonExistingPath)
+				require.NoError(t, err)
+
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				assert.Equal(t, "nonexisting456", workflow["id"], "Non-existing workflow should be created with --all flag")
+				assert.Equal(t, true, workflow["active"], "Non-existing workflow should have active=true")
+			},
+		},
+		{
+			name:           "Handles errors when fetching individual workflows",
+			args:           []string{"--directory", tempDir},
+			mockResponses:  nil,
+			mockError:      nil,
+			expectedOutput: "Warning: Could not fetch workflow with ID",
+			expectError:    false,
+			setupFiles: func(t *testing.T, dir string) {
+				filePath := filepath.Join(dir, "Error_Workflow.json")
+				workflow := n8n.Workflow{
+					Id:     stringPtr("error123"),
+					Name:   "Error Workflow",
+					Active: boolPtr(false),
+				}
+
+				encoder := n8n.NewWorkflowEncoder(true)
+				content, err := encoder.EncodeToJSON(workflow)
+				require.NoError(t, err)
+
+				err = os.WriteFile(filePath, content, 0644)
+				require.NoError(t, err)
+
+				successPath := filepath.Join(dir, "Success_Workflow.json")
+				successWorkflow := n8n.Workflow{
+					Id:     stringPtr("success456"),
+					Name:   "Success Workflow",
+					Active: boolPtr(false),
+				}
+
+				content, err = encoder.EncodeToJSON(successWorkflow)
+				require.NoError(t, err)
+
+				err = os.WriteFile(successPath, content, 0644)
+				require.NoError(t, err)
+			},
+			validateFiles: func(t *testing.T, dir string) {
+				successPath := filepath.Join(dir, "Success_Workflow.json")
+				content, err := os.ReadFile(successPath)
+				require.NoError(t, err)
+
+				var workflow map[string]interface{}
+				err = json.Unmarshal(content, &workflow)
+				require.NoError(t, err)
+
+				assert.Equal(t, true, workflow["active"], "Success workflow should be updated to active=true")
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -246,6 +404,31 @@ active: true
 			fakeClient := &clientfakes.FakeClientInterface{}
 			fakeClient.GetWorkflowsReturns(tc.mockResponses, tc.mockError)
 
+			fakeClient.GetWorkflowCalls(func(id string) (*n8n.Workflow, error) {
+				if tc.name == "Handles errors when fetching individual workflows" {
+					switch id {
+					case "success456":
+						return &n8n.Workflow{
+							Id:     stringPtr("success456"),
+							Name:   "Success Workflow",
+							Active: boolPtr(true),
+						}, nil
+					case "error123":
+						return nil, errors.New("API error fetching workflow")
+					}
+				}
+
+				if tc.mockResponses != nil && tc.mockResponses.Data != nil {
+					for _, workflow := range *tc.mockResponses.Data {
+						if workflow.Id != nil && *workflow.Id == id {
+							return &workflow, nil
+						}
+					}
+				}
+
+				return nil, errors.New("workflow not found")
+			})
+
 			viper.Set("api_key", "test_api_key")
 			viper.Set("instance_url", "http://test.n8n.local")
 
@@ -257,7 +440,8 @@ active: true
 			cmd.Flags().Bool("dry-run", false, "Dry run")
 			cmd.Flags().Bool("overwrite", false, "Overwrite")
 			cmd.Flags().StringP("output", "o", "json", "Output format")
-			cmd.Flags().Bool("minimal", true, "Minimal output")
+			cmd.Flags().Bool("no-truncate", false, "Include all fields in output")
+			cmd.Flags().Bool("all", false, "Refresh all workflows")
 			cmd.SetOut(outBuf)
 			cmd.SetErr(errBuf)
 
@@ -280,9 +464,18 @@ active: true
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			overwrite, _ := cmd.Flags().GetBool("overwrite")
 			output, _ := cmd.Flags().GetString("output")
-			minimal, _ := cmd.Flags().GetBool("minimal")
+			noTruncate, _ := cmd.Flags().GetBool("no-truncate")
+			minimal := !noTruncate
 
-			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output, minimal)
+			all := false
+			for i := 0; i < len(tc.args); i++ {
+				if tc.args[i] == "--all" {
+					all = true
+					break
+				}
+			}
+
+			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output, minimal, all)
 
 			if tc.expectError {
 				assert.Error(t, err)

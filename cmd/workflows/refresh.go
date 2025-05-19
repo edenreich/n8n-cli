@@ -37,9 +37,10 @@ import (
 var refreshCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "Refresh the state of workflows in the directory from n8n instance",
-	Long:  `Refresh command fetches and updates the state of workflows in the directory from a specified n8n instance.`,
-	Args:  cobra.ExactArgs(0),
-	RunE:  RefreshWorkflows,
+	Long: `Refresh command fetches and updates the state of workflows in the directory from a specified n8n instance.
+By default, only workflows that already exist in the directory will be refreshed. Use the --all flag to refresh all workflows.`,
+	Args: cobra.ExactArgs(0),
+	RunE: RefreshWorkflows,
 }
 
 func init() {
@@ -47,7 +48,8 @@ func init() {
 	refreshCmd.Flags().Bool("dry-run", false, "Show what would be updated without making changes")
 	refreshCmd.Flags().Bool("overwrite", false, "Overwrite existing files even if they have a different name")
 	refreshCmd.Flags().StringP("output", "o", "json", "Output format for new workflow files (json or yaml)")
-	refreshCmd.Flags().Bool("minimal", true, "Minimize workflow files by removing null and optional fields")
+	refreshCmd.Flags().Bool("no-truncate", false, "Include all fields in output files, including null and optional fields")
+	refreshCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance, not just those in the directory")
 	rootcmd.GetWorkflowsCmd().AddCommand(refreshCmd)
 
 	// nolint:errcheck
@@ -61,7 +63,8 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	overwrite, _ := cmd.Flags().GetBool("overwrite")
 	output, _ := cmd.Flags().GetString("output")
-	minimal, _ := cmd.Flags().GetBool("minimal")
+	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
+	all, _ := cmd.Flags().GetBool("all")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
@@ -72,23 +75,16 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 
 	client := n8n.NewClient(instanceURL, apiKey)
 
-	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal)
+	// Invert noTruncate flag to maintain backwards compatibility with the former minimal flag
+	minimal := !noTruncate
+
+	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal, all)
 }
 
 // RefreshWorkflowsWithClient is the testable version of RefreshWorkflows that accepts a client interface
-func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, directory string, dryRun bool, overwrite bool, output string, minimal bool) error {
+func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, directory string, dryRun bool, overwrite bool, output string, minimal bool, all bool) error {
 	if err := ensureDirectoryExists(cmd, directory, dryRun); err != nil {
 		return err
-	}
-
-	workflowList, err := client.GetWorkflows()
-	if err != nil {
-		return fmt.Errorf("error fetching workflows: %w", err)
-	}
-
-	if workflowList == nil || workflowList.Data == nil || len(*workflowList.Data) == 0 {
-		cmd.Println("No workflows found in n8n instance")
-		return nil
 	}
 
 	localFiles, err := extractLocalWorkflows(directory)
@@ -96,9 +92,43 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 		return err
 	}
 
-	for _, workflow := range *workflowList.Data {
-		if err := processWorkflow(cmd, workflow, localFiles, directory, dryRun, overwrite, output, minimal); err != nil {
-			return err
+	if all || len(localFiles) == 0 {
+		cmd.Println("Refreshing all workflows from n8n instance")
+
+		workflowList, err := client.GetWorkflows()
+		if err != nil {
+			return fmt.Errorf("error fetching workflows: %w", err)
+		}
+
+		if workflowList == nil || workflowList.Data == nil || len(*workflowList.Data) == 0 {
+			cmd.Println("No workflows found in n8n instance")
+			return nil
+		}
+
+		for _, workflow := range *workflowList.Data {
+			if err := processWorkflow(cmd, workflow, localFiles, directory, dryRun, overwrite, output, minimal); err != nil {
+				return err
+			}
+		}
+	} else {
+		cmd.Println("Refreshing only workflows that exist in the directory")
+
+		refreshed := 0
+		for workflowID := range localFiles {
+			workflow, err := client.GetWorkflow(workflowID)
+			if err != nil {
+				cmd.Printf("Warning: Could not fetch workflow with ID %s: %v\n", workflowID, err)
+				continue
+			}
+
+			if err := processWorkflow(cmd, *workflow, localFiles, directory, dryRun, overwrite, output, minimal); err != nil {
+				return err
+			}
+			refreshed++
+		}
+
+		if refreshed == 0 {
+			cmd.Println("No workflows were refreshed. Either the local workflows don't exist in the n8n instance or there was an error fetching them. Try refresh --all and delete the local files you don't want to track.")
 		}
 	}
 
@@ -241,9 +271,6 @@ func workflowNeedsUpdate(filePath string, existingPath string, content []byte, m
 
 	return rootcmd.DetectWorkflowDrift(existingWorkflow, newWorkflow, minimal)
 }
-
-// Both compareYAMLContent and compareJSONContent functions have been replaced
-// by the DetectWorkflowDrift utility function in the cmd package
 
 // processWorkflow handles processing of a single workflow
 func processWorkflow(cmd *cobra.Command, workflow n8n.Workflow, localFiles map[string]string,
