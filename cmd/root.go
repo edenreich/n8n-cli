@@ -26,6 +26,7 @@ import (
 	"os"
 
 	"github.com/edenreich/n8n-cli/config"
+	"github.com/edenreich/n8n-cli/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,6 +50,10 @@ through version control systems.`,
 		return cmd.Help()
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Initialize the logger
+		debug, _ := cmd.Flags().GetBool("debug")
+		logger.InitLogger(debug)
+
 		if cmd.Name() == "help" || cmd.Name() == "version" {
 			return nil
 		}
@@ -79,6 +84,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringP("api-key", "k", "", "n8n API Key (env: N8N_API_KEY)")
 	rootCmd.PersistentFlags().StringP("url", "u", "http://localhost:5678", "n8n instance URL (env: N8N_INSTANCE_URL)")
+	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging (env: DEBUG)")
 	rootCmd.Flags().Bool("version", false, "Display the version information")
 
 	if err := viper.BindPFlag("api_key", rootCmd.PersistentFlags().Lookup("api-key")); err != nil {
@@ -86,6 +92,9 @@ func init() {
 	}
 	if err := viper.BindPFlag("instance_url", rootCmd.PersistentFlags().Lookup("url")); err != nil {
 		fmt.Fprintf(os.Stderr, "Error binding url flag: %v\n", err)
+	}
+	if err := viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding debug flag: %v\n", err)
 	}
 	rootCmd.Flags().BoolP("verbose", "V", false, "Show detailed output during synchronization")
 }

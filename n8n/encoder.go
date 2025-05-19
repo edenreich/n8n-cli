@@ -2,10 +2,12 @@
 package n8n
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/edenreich/n8n-cli/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -95,9 +97,16 @@ func (d *WorkflowDecoder) DecodeFromJSON(data []byte) (Workflow, error) {
 
 // DecodeFromYAML decodes a workflow from a YAML byte array
 func (d *WorkflowDecoder) DecodeFromYAML(data []byte) (Workflow, error) {
+	logger.Debug("YAML INPUT:\n%s", string(data))
+
 	var workflowMap map[string]interface{}
 	if err := yaml.Unmarshal(data, &workflowMap); err != nil {
 		return Workflow{}, fmt.Errorf("failed to decode workflow from YAML: %w", err)
+	}
+
+	jsonBytes, err := json.MarshalIndent(workflowMap, "", "  ")
+	if err == nil {
+		logger.Debug("YAML TO JSON INTERMEDIATE MAP:\n%s", string(jsonBytes))
 	}
 
 	jsonData, err := json.Marshal(workflowMap)
@@ -105,8 +114,24 @@ func (d *WorkflowDecoder) DecodeFromYAML(data []byte) (Workflow, error) {
 		return Workflow{}, fmt.Errorf("failed to convert YAML map to JSON: %w", err)
 	}
 
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, jsonData, "", "  "); err == nil {
+		logger.Debug("YAML TO JSON FINAL SERIALIZED OUTPUT:\n%s", prettyJSON.String())
+	} else {
+		logger.Debug("YAML TO JSON FINAL OUTPUT (could not prettify): %s", string(jsonData))
+	}
+
+	logger.Debug("YAML TO JSON (AFTER MARSHAL): %s", string(jsonData))
+
 	var workflow Workflow
 	if err := json.Unmarshal(jsonData, &workflow); err != nil {
+		logger.Debug("ERROR UNMARSHALING JSON TO WORKFLOW: %v", err)
+
+		var anyMap map[string]interface{}
+		if mapErr := json.Unmarshal(jsonData, &anyMap); mapErr == nil {
+			prettyJSON, _ := json.MarshalIndent(anyMap, "", "  ")
+			logger.Debug("JSON STRUCTURE THAT FAILED TO UNMARSHAL:\n%s", string(prettyJSON))
+		}
 		return Workflow{}, fmt.Errorf("failed to convert JSON to workflow: %w", err)
 	}
 

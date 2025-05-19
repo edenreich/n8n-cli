@@ -26,9 +26,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/edenreich/n8n-cli/cmd"
+	"github.com/edenreich/n8n-cli/logger"
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -92,7 +94,6 @@ This command processes JSON and YAML workflow files and ensures they exist on yo
 	RunE: SyncWorkflows,
 }
 
-// TODO - imeplement tags updates during sync
 func init() {
 	cmd.GetWorkflowsCmd().AddCommand(SyncCmd)
 
@@ -158,9 +159,20 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 	var workflow n8n.Workflow
 	var err error
 
+	logger.Debug("Processing file: %s", filePath)
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	logger.Debug("File size: %d bytes", len(content))
+	if len(content) > 0 {
+		preview := string(content)
+		if len(preview) > 100 {
+			preview = preview[:100] + "..."
+		}
+		logger.Debug("Content preview: %s", preview)
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -168,11 +180,18 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 
 	switch ext {
 	case ".json":
+		logger.Debug("Parsing as JSON: %s", filename)
 		if err = json.Unmarshal(content, &workflow); err != nil {
+			logger.Debug("JSON parsing error: %v", err)
 			return fmt.Errorf("error parsing JSON workflow: %w", err)
 		}
 	case ".yaml", ".yml":
-		if err = yaml.Unmarshal(content, &workflow); err != nil {
+		logger.Debug("Parsing as YAML: %s", filename)
+
+		decoder := n8n.NewWorkflowDecoder()
+		workflow, err = decoder.DecodeFromYAML(content)
+		if err != nil {
+			logger.Debug("YAML parsing error: %v", err)
 			return fmt.Errorf("error parsing YAML workflow: %w", err)
 		}
 	default:
@@ -253,9 +272,12 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		} else if workflow.Active != nil && !*workflow.Active {
 			changes.NeedsDeactivation = true
 		}
+		if workflow.Tags != nil && len(*workflow.Tags) > 0 {
+			changes.NeedsTagsUpdate = true
+		}
 	}
 
-	if w != nil && workflow.Active != nil {
+	if w != nil {
 		workflowID := ""
 		workflowName := workflow.Name
 
@@ -274,32 +296,40 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 			idInfo = "(after creation)"
 		}
 
-		if *workflow.Active && changes.NeedsActivation {
-			dryRunMsg := fmt.Sprintf("Would activate workflow '%s' %s", workflowName, idInfo)
+		if workflow.Active != nil {
+			if *workflow.Active && changes.NeedsActivation {
+				dryRunMsg := fmt.Sprintf("Would activate workflow '%s' %s", workflowName, idInfo)
 
-			err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-				_, err := client.ActivateWorkflow(workflowID)
+				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+					_, err := client.ActivateWorkflow(workflowID)
+					if err != nil {
+						return "", fmt.Errorf("error activating workflow: %w", err)
+					}
+					return fmt.Sprintf("Activated workflow '%s' %s", workflowName, idInfo), nil
+				})
+
 				if err != nil {
-					return "", fmt.Errorf("error activating workflow: %w", err)
+					return err
 				}
-				return fmt.Sprintf("Activated workflow '%s' %s", workflowName, idInfo), nil
-			})
+			} else if !*workflow.Active && changes.NeedsDeactivation {
+				dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
 
-			if err != nil {
-				return err
+				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+					_, err := client.DeactivateWorkflow(workflowID)
+					if err != nil {
+						return "", fmt.Errorf("error deactivating workflow: %w", err)
+					}
+					return fmt.Sprintf("Deactivated workflow '%s' %s", workflowName, idInfo), nil
+				})
+
+				if err != nil {
+					return err
+				}
 			}
-		} else if !*workflow.Active && changes.NeedsDeactivation {
-			dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
+		}
 
-			err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-				_, err := client.DeactivateWorkflow(workflowID)
-				if err != nil {
-					return "", fmt.Errorf("error deactivating workflow: %w", err)
-				}
-				return fmt.Sprintf("Deactivated workflow '%s' %s", workflowName, idInfo), nil
-			})
-
-			if err != nil {
+		if changes.NeedsTagsUpdate && workflow.Tags != nil && len(*workflow.Tags) > 0 {
+			if err := HandleTagUpdates(client, cmd, &workflow, workflowID, dryRun); err != nil {
 				return err
 			}
 		}
@@ -391,6 +421,7 @@ type WorkflowChange struct {
 	NeedsUpdate       bool
 	NeedsActivation   bool
 	NeedsDeactivation bool
+	NeedsTagsUpdate   bool
 }
 
 // ExecuteOrDryRun is a helper function that either performs an action or shows what would happen
@@ -421,17 +452,21 @@ func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowCh
 		if local.Active != nil && *local.Active {
 			changes.NeedsActivation = true
 		}
+		if local.Tags != nil && len(*local.Tags) > 0 {
+			changes.NeedsTagsUpdate = true
+		}
 		return changes
 	}
 
 	localCopy := *local
 	localCopy.Id = nil
 	localCopy.Active = nil
+	localCopy.Tags = nil
 
-	localCopy.Id = nil
 	remoteCopy := *remote
 	remoteCopy.Id = nil
 	remoteCopy.Active = nil
+	remoteCopy.Tags = nil
 
 	changes.NeedsUpdate = cmd.DetectWorkflowDrift(remoteCopy, localCopy, true)
 
@@ -445,5 +480,45 @@ func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowCh
 		changes.NeedsActivation = true
 	}
 
+	if local.Tags != nil && len(*local.Tags) > 0 {
+		if remote.Tags == nil || len(*remote.Tags) == 0 {
+			changes.NeedsTagsUpdate = true
+		} else {
+			if !reflect.DeepEqual(local.Tags, remote.Tags) {
+				changes.NeedsTagsUpdate = true
+			}
+		}
+	}
+
 	return changes
+}
+
+// HandleTagUpdates updates the tags for a workflow if needed
+func HandleTagUpdates(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, workflowID string, dryRun bool) error {
+	if workflow.Tags == nil || len(*workflow.Tags) == 0 {
+		return nil
+	}
+
+	var tagIDs n8n.TagIds
+	for _, tag := range *workflow.Tags {
+		if tag.Id != nil && *tag.Id != "" {
+			tagIDs = append(tagIDs, struct {
+				Id string `json:"id"`
+			}{Id: *tag.Id})
+		}
+	}
+
+	if len(tagIDs) == 0 {
+		return nil
+	}
+
+	dryRunMsg := fmt.Sprintf("Would update tags for workflow '%s' (ID: %s)", workflow.Name, workflowID)
+
+	return ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+		_, err := client.UpdateWorkflowTags(workflowID, tagIDs)
+		if err != nil {
+			return "", fmt.Errorf("error updating workflow tags: %w", err)
+		}
+		return fmt.Sprintf("Updated tags for workflow '%s' (ID: %s)", workflow.Name, workflowID), nil
+	})
 }
