@@ -70,7 +70,7 @@ nodes:
     name: Send Email
     parameters:
       emailFormat: text
-      fromEmail: info@eden-reich.com
+      fromEmail: info@example.com
       options: {}
       subject: ==New AI-Analyzed Contact from {{ $node["Sample Data"].json.body.name }}
       text: |-
@@ -92,7 +92,7 @@ nodes:
 
         ---
         This message was processed by AI and sent from your website contact form.
-      toEmail: eden.reich@gmail.com
+      toEmail: info@example.com
     position:
       - -1360
       - -940

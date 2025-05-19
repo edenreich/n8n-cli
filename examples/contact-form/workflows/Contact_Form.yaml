@@ -1,11 +1,25 @@
 ---
 active: true
 connections:
+  Email:
+    main:
+      - []
+  Sample Data:
+    main:
+      - - index: 0
+          node: Email
+          type: main
   Webhook:
     main:
       - - index: 0
           node: Email
           type: main
+  When clicking ‘Test workflow’:
+    main:
+      - - index: 0
+          node: Sample Data
+          type: main
+id: UrXrB8Bmjgr6bJUH
 name: Contact Form
 nodes:
   - id: 7141f146-c1d4-4310-8f47-6026dd6f1b33
@@ -18,45 +32,60 @@ nodes:
       path: contact-form-submission
       responseMode: responseNode
     position:
-      - -1520
-      - -600
+      - -1600
+      - -460
     type: n8n-nodes-base.webhook
-  - id: a803f7d3-a7ce-4e05-9b4c-ef8c962c7224
+    webhookId: 17b40677-98e7-45fd-93de-d89d68fa1cb3
+  - credentials:
+      smtp:
+        id: YkTaKDvPWacL6fvE
+        name: Mailgun
+    id: a803f7d3-a7ce-4e05-9b4c-ef8c962c7224
     name: Email
     parameters:
-      fromEmail: no-reply@example.com
+      emailFormat: text
+      fromEmail: info@example.com
+      options: {}
       subject: =New Contact Request from {{ $json.body.name }}
       text: |-
         =New Contact Form Submission
 
-        Name: {{ $json.body.name }}
-        Email: {{ $json.body.email }}
-        Message: {{ $json.body.message }}
-
-        ---
-        This message was sent from your website contact form.
-      toEmail: admin@example.com
+        Original Details:
+        -----------------
+        Name: {{ $node["Sample Data"].json.body.name }}
+        Email: {{ $node["Sample Data"].json.body.email }}
+        Message: {{ $node["Sample Data"].json.body.message }}
+      toEmail: info@example.com
     position:
-      - -640
-      - -600
+      - -1380
+      - -560
     type: n8n-nodes-base.emailSend
-  - id: b704a8d2-e1db-4fcf-8f0b-41b70c061e23
-    name: Respond to Webhook
+    webhookId: 89b5658d-9fed-4b8c-9003-4661b775e94f
+  - id: dcbadc38-2169-4ea3-96f4-82c4a61ebfe8
+    name: Sample Data
     parameters:
-      options:
-        responseCode: 200
-      responseData: json
-      responseDataJson: |-
+      jsonOutput: |-
         {
-          "success": true,
-          "message": "Thank you for your message! We will get back to you soon."
+          "body": {
+            "name": "John Smith",
+            "email": "john.smith@example.com",
+            "message": "I recently purchased your product and I'm having trouble with the installation. The manual says I should be able to connect it directly to my home network, but it's not being recognized. Could you please help me troubleshoot this issue? I've already tried restarting both the device and my router."
+          }
         }
+      mode: raw
+      options: {}
     position:
-      - 0
-      - -600
-    type: n8n-nodes-base.respondToWebhook
-    connections:
-      main:
-        - - index: 0
-            node: Email
-            type: main
+      - -1600
+      - -660
+    type: n8n-nodes-base.set
+    typeVersion: 3.4
+  - id: cb6d3581-9d53-4d08-a1b7-a24e00ad109c
+    name: When clicking ‘Test workflow’
+    parameters: {}
+    position:
+      - -1820
+      - -660
+    type: n8n-nodes-base.manualTrigger
+    typeVersion: 1
+settings: {}
+tags: []
