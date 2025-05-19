@@ -71,12 +71,19 @@ func (e *WorkflowEncoder) EncodeToYAML(workflow Workflow) ([]byte, error) {
 		return nil, fmt.Errorf("failed to convert JSON to map for YAML encoding: %w", err)
 	}
 
-	yamlData, err := yaml.Marshal(workflowMap)
-	if err != nil {
+	var buf bytes.Buffer
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+
+	if err := encoder.Encode(workflowMap); err != nil {
 		return nil, fmt.Errorf("failed to encode workflow to YAML: %w", err)
 	}
 
-	return append([]byte("---\n"), yamlData...), nil
+	if err := encoder.Close(); err != nil {
+		return nil, fmt.Errorf("failed to finalize YAML encoding: %w", err)
+	}
+
+	return append([]byte("---\n"), buf.Bytes()...), nil
 }
 
 type WorkflowDecoder struct{}
