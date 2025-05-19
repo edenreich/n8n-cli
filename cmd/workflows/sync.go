@@ -26,9 +26,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/edenreich/n8n-cli/cmd"
+	"github.com/edenreich/n8n-cli/logger"
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,28 +40,60 @@ import (
 // syncCmd represents the sync command
 var SyncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "Sync workflows to n8n instance",
-	Long: `Sync command takes workflow files (JSON or YAML format) from a specified directory 
-and synchronizes them with your n8n instance. For example:
+	Short: "Synchronize workflows between local files and n8n instance",
+	Long: `Synchronizes workflow files from a local directory to an n8n instance.
 
-n8n-cli workflows sync --directory workflows/
+Examples:
 
-This will take all JSON and YAML workflow files from workflows directory and 
-upload them to the n8n instance specified in your environment configuration.
+  # Sync all workflow files from a directory
+  n8n workflows sync --directory workflows/
 
-The command will:
-1. Process all JSON and YAML files in the specified directory
-2. For each workflow file:
-   - If the workflow ID exists and is found on the n8n instance, it will update it
-   - If the workflow doesn't exist or has no ID, it will create a new workflow
-   - If the workflow has "active": true in its definition, it will be activated automatically
-   - If the workflow has "active": false in it's definition, it will be deactivated automatically
-3. If the --dry-run flag is set, it will show what would be done without making any changes
-4. If the --prune flag is set, it will remove workflows that are not present in the directory`,
+  # Preview changes without applying them
+  n8n workflows sync --directory workflows/ --dry-run
+
+  # Sync and remove workflows that don't exist locally
+  n8n workflows sync --directory workflows/ --prune
+
+This command processes JSON and YAML workflow files and ensures they exist on your n8n instance:
+
+1. Each workflow file is processed intelligently:
+   - Workflows with IDs that exist on the server will be updated
+   - Workflows with IDs that don't exist will be created
+   - Workflows without IDs will be created as new
+   - Active state (true/false) will be respected and applied
+
+2. Common scenarios:
+   - Development → Production: Create workflow files locally, test them, then sync to production
+   - Backup: Store workflow configurations in a git repository for version control
+   - Migration: Export workflows from one n8n instance and import to another
+   - CI/CD: Automate workflow deployments in your delivery pipeline
+   - Leverage AI-assisted development: Create workflows with Large Language Models (LLMs) and sync to n8n - streamlining workflow creation through code instead of manual UI interaction
+   
+3. File formats supported:
+   - JSON: Standard n8n workflow export format
+   - YAML: More readable alternative, ideal for version control
+
+4. Additional examples:
+   - Deploy workflows to production: 
+     n8n workflows sync --directory workflows/production/
+
+   - Migrate between environments (dev to staging):
+     n8n workflows sync --directory workflows/dev/ --prune
+
+   - Back up before a major change:
+     mkdir -p backups/$(date +%Y%m%d) && \
+     n8n workflows refresh --directory backups/$(date +%Y%m%d)/ --format json
+
+   - In CI/CD pipelines:
+     n8n workflows sync --directory workflows/ --dry-run && \
+     n8n workflows sync --directory workflows/
+
+5. Options:
+   - Use --dry-run to preview changes without applying them
+   - Use --prune to remove remote workflows that don't exist locally`,
 	RunE: SyncWorkflows,
 }
 
-// TODO - imeplement tags updates during sync
 func init() {
 	cmd.GetWorkflowsCmd().AddCommand(SyncCmd)
 
@@ -111,13 +145,9 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if prune && !dryRun {
+	if prune {
 		if err := PruneWorkflows(client, cmd, localWorkflowIDs); err != nil {
 			return fmt.Errorf("error pruning workflows: %w", err)
-		}
-	} else if prune && dryRun {
-		if err := DryRunPruneWorkflows(client, cmd, localWorkflowIDs); err != nil {
-			return fmt.Errorf("error during dry run prune: %w", err)
 		}
 	}
 
@@ -129,9 +159,20 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 	var workflow n8n.Workflow
 	var err error
 
+	logger.Debug("Processing file: %s", filePath)
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	logger.Debug("File size: %d bytes", len(content))
+	if len(content) > 0 {
+		preview := string(content)
+		if len(preview) > 100 {
+			preview = preview[:100] + "..."
+		}
+		logger.Debug("Content preview: %s", preview)
 	}
 
 	ext := strings.ToLower(filepath.Ext(filePath))
@@ -139,11 +180,18 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 
 	switch ext {
 	case ".json":
+		logger.Debug("Parsing as JSON: %s", filename)
 		if err = json.Unmarshal(content, &workflow); err != nil {
+			logger.Debug("JSON parsing error: %v", err)
 			return fmt.Errorf("error parsing JSON workflow: %w", err)
 		}
 	case ".yaml", ".yml":
-		if err = yaml.Unmarshal(content, &workflow); err != nil {
+		logger.Debug("Parsing as YAML: %s", filename)
+
+		decoder := n8n.NewWorkflowDecoder()
+		workflow, err = decoder.DecodeFromYAML(content)
+		if err != nil {
+			logger.Debug("YAML parsing error: %v", err)
 			return fmt.Errorf("error parsing YAML workflow: %w", err)
 		}
 	default:
@@ -154,89 +202,135 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 	var remoteWorkflow *n8n.Workflow
 
 	if workflow.Id != nil && *workflow.Id != "" {
-		workflowList, fetchErr := client.GetWorkflows()
-		if fetchErr == nil && workflowList != nil && workflowList.Data != nil {
-			for _, wf := range *workflowList.Data {
-				if wf.Id != nil && *wf.Id == *workflow.Id {
-					remoteWorkflow = &wf
-					break
+		remoteWorkflow, err = client.GetWorkflow(*workflow.Id)
+
+		if err != nil {
+			dryRunMsg := fmt.Sprintf("Would create workflow '%s' with ID %s from %s (ID specified but not found on server)", workflow.Name, *workflow.Id, filename)
+
+			err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+				var err error
+				w, err = client.CreateWorkflow(&workflow)
+				if err != nil {
+					return "", fmt.Errorf("error creating workflow: %w", err)
 				}
-			}
-		}
+				return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+			})
 
-		changes := DetectWorkflowChanges(&workflow, remoteWorkflow)
-
-		if dryRun {
-			if changes.NeedsUpdate {
-				cmd.Printf("Would update workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
-			} else {
-				cmd.Printf("No content changes for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+			if err != nil {
+				return err
 			}
 		} else {
+			changes := DetectWorkflowChanges(&workflow, remoteWorkflow)
+
 			if changes.NeedsUpdate {
-				w, err = client.UpdateWorkflow(*workflow.Id, &workflow)
+				dryRunMsg := fmt.Sprintf("Would update workflow '%s' (ID: %s) from %s", workflow.Name, *workflow.Id, filename)
+
+				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+					var err error
+					w, err = client.UpdateWorkflow(*workflow.Id, &workflow)
+					if err != nil {
+						return "", fmt.Errorf("error updating workflow: %w", err)
+					}
+					return fmt.Sprintf("Updated workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+				})
+
 				if err != nil {
-					return fmt.Errorf("error updating workflow: %w", err)
+					return err
 				}
-				cmd.Printf("Updated workflow '%s' (ID: %s) from %s\n", w.Name, *w.Id, filename)
 			} else {
 				w = remoteWorkflow
-				cmd.Printf("No changes needed for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+				if dryRun {
+					cmd.Printf("No content changes for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+				} else {
+					cmd.Printf("No changes needed for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
+				}
 			}
 		}
 	} else {
-		if dryRun {
-			cmd.Printf("Would create workflow '%s' from %s\n", workflow.Name, filename)
-		} else {
+		dryRunMsg := fmt.Sprintf("Would create workflow '%s' from %s", workflow.Name, filename)
+
+		err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+			var err error
 			w, err = client.CreateWorkflow(&workflow)
 			if err != nil {
-				return fmt.Errorf("error creating workflow: %w", err)
+				return "", fmt.Errorf("error creating workflow: %w", err)
 			}
-			cmd.Printf("Created workflow '%s' (ID: %s) from %s\n", w.Name, *w.Id, filename)
+			return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+		})
+
+		if err != nil {
+			return err
 		}
 	}
 
 	var changes WorkflowChange
-	if w == remoteWorkflow {
+	if remoteWorkflow != nil {
 		changes = DetectWorkflowChanges(&workflow, remoteWorkflow)
-	} else if remoteWorkflow != nil {
-		changes = DetectWorkflowChanges(&workflow, remoteWorkflow)
-	} else if workflow.Active != nil && *workflow.Active {
-		changes.NeedsActivation = true
-	} else if workflow.Active != nil && !*workflow.Active {
-		changes.NeedsDeactivation = true
+	} else {
+		if workflow.Active != nil && *workflow.Active {
+			changes.NeedsActivation = true
+		} else if workflow.Active != nil && !*workflow.Active {
+			changes.NeedsDeactivation = true
+		}
+		if workflow.Tags != nil && len(*workflow.Tags) > 0 {
+			changes.NeedsTagsUpdate = true
+		}
 	}
 
-	if !dryRun && w != nil {
+	if w != nil {
+		workflowID := ""
+		workflowName := workflow.Name
+
+		if w.Id != nil {
+			workflowID = *w.Id
+		}
+
+		if w.Name != "" {
+			workflowName = w.Name
+		}
+
+		idInfo := ""
+		if workflowID != "" {
+			idInfo = fmt.Sprintf("(ID: %s)", workflowID)
+		} else {
+			idInfo = "(after creation)"
+		}
+
 		if workflow.Active != nil {
 			if *workflow.Active && changes.NeedsActivation {
-				_, err = client.ActivateWorkflow(*w.Id)
+				dryRunMsg := fmt.Sprintf("Would activate workflow '%s' %s", workflowName, idInfo)
+
+				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+					_, err := client.ActivateWorkflow(workflowID)
+					if err != nil {
+						return "", fmt.Errorf("error activating workflow: %w", err)
+					}
+					return fmt.Sprintf("Activated workflow '%s' %s", workflowName, idInfo), nil
+				})
+
 				if err != nil {
-					return fmt.Errorf("error activating workflow: %w", err)
+					return err
 				}
-				cmd.Printf("Activated workflow '%s' (ID: %s)\n", w.Name, *w.Id)
 			} else if !*workflow.Active && changes.NeedsDeactivation {
-				_, err = client.DeactivateWorkflow(*w.Id)
+				dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
+
+				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+					_, err := client.DeactivateWorkflow(workflowID)
+					if err != nil {
+						return "", fmt.Errorf("error deactivating workflow: %w", err)
+					}
+					return fmt.Sprintf("Deactivated workflow '%s' %s", workflowName, idInfo), nil
+				})
+
 				if err != nil {
-					return fmt.Errorf("error deactivating workflow: %w", err)
+					return err
 				}
-				cmd.Printf("Deactivated workflow '%s' (ID: %s)\n", w.Name, *w.Id)
 			}
 		}
-	} else if dryRun {
-		if workflow.Active != nil {
-			if *workflow.Active && changes.NeedsActivation {
-				if workflow.Id != nil && *workflow.Id != "" {
-					cmd.Printf("Would activate workflow '%s' (ID: %s)\n", workflow.Name, *workflow.Id)
-				} else {
-					cmd.Printf("Would activate workflow '%s' (after creation)\n", workflow.Name)
-				}
-			} else if !*workflow.Active && changes.NeedsDeactivation {
-				if workflow.Id != nil && *workflow.Id != "" {
-					cmd.Printf("Would deactivate workflow '%s' (ID: %s)\n", workflow.Name, *workflow.Id)
-				} else {
-					cmd.Printf("Would deactivate workflow '%s' (after creation)\n", workflow.Name)
-				}
+
+		if changes.NeedsTagsUpdate && workflow.Tags != nil && len(*workflow.Tags) > 0 {
+			if err := HandleTagUpdates(client, cmd, &workflow, workflowID, dryRun); err != nil {
+				return err
 			}
 		}
 	}
@@ -290,40 +384,32 @@ func PruneWorkflows(client n8n.ClientInterface, cmd *cobra.Command, localWorkflo
 		return fmt.Errorf("no workflows found in n8n instance")
 	}
 
+	dryRun := false
+	if cmd.Flags().Changed("dry-run") {
+		dryRun, _ = cmd.Flags().GetBool("dry-run")
+	}
+
 	for _, workflow := range *workflowList.Data {
 		if workflow.Id == nil || *workflow.Id == "" {
 			continue
 		}
 
 		if !localWorkflowIDs[*workflow.Id] {
-			if err := client.DeleteWorkflow(*workflow.Id); err != nil {
-				return fmt.Errorf("error deleting workflow %s (%s): %w", workflow.Name, *workflow.Id, err)
+			workflowID := *workflow.Id
+			workflowName := workflow.Name
+
+			dryRunMsg := fmt.Sprintf("Would delete workflow '%s' (ID: %s) that was not in local files", workflowName, workflowID)
+
+			err := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+				if err := client.DeleteWorkflow(workflowID); err != nil {
+					return "", fmt.Errorf("error deleting workflow %s (%s): %w", workflowName, workflowID, err)
+				}
+				return fmt.Sprintf("Deleted workflow '%s' (ID: %s) that was not in local files", workflowName, workflowID), nil
+			})
+
+			if err != nil {
+				return err
 			}
-			cmd.Printf("Deleted workflow '%s' (ID: %s) that was not in local files\n", workflow.Name, *workflow.Id)
-		}
-	}
-
-	return nil
-}
-
-// DryRunPruneWorkflows simulates pruning workflows without actually deleting anything
-func DryRunPruneWorkflows(client n8n.ClientInterface, cmd *cobra.Command, localWorkflowIDs map[string]bool) error {
-	workflowList, err := client.GetWorkflows()
-	if err != nil {
-		return fmt.Errorf("error getting workflows from n8n: %w", err)
-	}
-
-	if workflowList == nil || workflowList.Data == nil {
-		return fmt.Errorf("no workflows found in n8n instance")
-	}
-
-	for _, workflow := range *workflowList.Data {
-		if workflow.Id == nil || *workflow.Id == "" {
-			continue
-		}
-
-		if !localWorkflowIDs[*workflow.Id] {
-			cmd.Printf("Would delete workflow '%s' (ID: %s) that was not in local files\n", workflow.Name, *workflow.Id)
 		}
 	}
 
@@ -335,6 +421,27 @@ type WorkflowChange struct {
 	NeedsUpdate       bool
 	NeedsActivation   bool
 	NeedsDeactivation bool
+	NeedsTagsUpdate   bool
+}
+
+// ExecuteOrDryRun is a helper function that either performs an action or shows what would happen
+// based on whether dry run mode is enabled
+func ExecuteOrDryRun(cmd *cobra.Command, dryRun bool, dryRunMsg string, fn func() (string, error)) error {
+	if dryRun {
+		cmd.Println(dryRunMsg)
+		return nil
+	}
+
+	resultMsg, err := fn()
+	if err != nil {
+		return err
+	}
+
+	if resultMsg != "" {
+		cmd.Println(resultMsg)
+	}
+
+	return nil
 }
 
 // DetectWorkflowChanges compares local and remote workflows to detect what changes are needed
@@ -345,27 +452,23 @@ func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowCh
 		if local.Active != nil && *local.Active {
 			changes.NeedsActivation = true
 		}
+		if local.Tags != nil && len(*local.Tags) > 0 {
+			changes.NeedsTagsUpdate = true
+		}
 		return changes
 	}
 
 	localCopy := *local
 	localCopy.Id = nil
 	localCopy.Active = nil
-	localCopy.CreatedAt = nil
-	localCopy.UpdatedAt = nil
-	localCopy.Tags = nil // Exclude tags from comparison
+	localCopy.Tags = nil
 
 	remoteCopy := *remote
 	remoteCopy.Id = nil
 	remoteCopy.Active = nil
-	remoteCopy.CreatedAt = nil
-	remoteCopy.UpdatedAt = nil
 	remoteCopy.Tags = nil
 
-	localJSON, _ := json.Marshal(localCopy)
-	remoteJSON, _ := json.Marshal(remoteCopy)
-
-	changes.NeedsUpdate = string(localJSON) != string(remoteJSON)
+	changes.NeedsUpdate = cmd.DetectWorkflowDrift(remoteCopy, localCopy, true)
 
 	if local.Active != nil && remote.Active != nil {
 		if *local.Active && !*remote.Active {
@@ -377,5 +480,45 @@ func DetectWorkflowChanges(local *n8n.Workflow, remote *n8n.Workflow) WorkflowCh
 		changes.NeedsActivation = true
 	}
 
+	if local.Tags != nil && len(*local.Tags) > 0 {
+		if remote.Tags == nil || len(*remote.Tags) == 0 {
+			changes.NeedsTagsUpdate = true
+		} else {
+			if !reflect.DeepEqual(local.Tags, remote.Tags) {
+				changes.NeedsTagsUpdate = true
+			}
+		}
+	}
+
 	return changes
+}
+
+// HandleTagUpdates updates the tags for a workflow if needed
+func HandleTagUpdates(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, workflowID string, dryRun bool) error {
+	if workflow.Tags == nil || len(*workflow.Tags) == 0 {
+		return nil
+	}
+
+	var tagIDs n8n.TagIds
+	for _, tag := range *workflow.Tags {
+		if tag.Id != nil && *tag.Id != "" {
+			tagIDs = append(tagIDs, struct {
+				Id string `json:"id"`
+			}{Id: *tag.Id})
+		}
+	}
+
+	if len(tagIDs) == 0 {
+		return nil
+	}
+
+	dryRunMsg := fmt.Sprintf("Would update tags for workflow '%s' (ID: %s)", workflow.Name, workflowID)
+
+	return ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+		_, err := client.UpdateWorkflowTags(workflowID, tagIDs)
+		if err != nil {
+			return "", fmt.Errorf("error updating workflow tags: %w", err)
+		}
+		return fmt.Sprintf("Updated tags for workflow '%s' (ID: %s)", workflow.Name, workflowID), nil
+	})
 }

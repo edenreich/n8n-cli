@@ -7,6 +7,8 @@ package n8n
 type ClientInterface interface {
 	// GetWorkflows fetches workflows from the n8n API
 	GetWorkflows() (*WorkflowList, error)
+	// GetWorkflow fetches a single workflow by its ID
+	GetWorkflow(id string) (*Workflow, error)
 	// ActivateWorkflow activates a workflow by its ID
 	ActivateWorkflow(id string) (*Workflow, error)
 	// DeactivateWorkflow deactivates a workflow by its ID
@@ -17,6 +19,10 @@ type ClientInterface interface {
 	UpdateWorkflow(id string, workflow *Workflow) (*Workflow, error)
 	// DeleteWorkflow deletes a workflow by its ID
 	DeleteWorkflow(id string) error
+	// GetWorkflowTags fetches the tags of a workflow by its ID
+	GetWorkflowTags(id string) (WorkflowTags, error)
+	// UpdateWorkflowTags updates the tags of a workflow by its ID
+	UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, error)
 }
 
 // Ensure Client implements ClientInterface

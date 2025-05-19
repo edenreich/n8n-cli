@@ -7,7 +7,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/edenreich/n8n-cli/cmd/workflows"
@@ -17,7 +16,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 )
 
 func TestRefreshCommand(t *testing.T) {
@@ -142,17 +140,14 @@ func TestRefreshCommand(t *testing.T) {
 			expectedOutput: "No changes for workflow",
 			expectError:    false,
 			setupFiles: func(t *testing.T, dir string) {
-				workflow := n8n.Workflow{
-					Id:     stringPtr("789"),
-					Name:   "Test Workflow 3",
-					Active: boolPtr(true),
-				}
-				var buf strings.Builder
-				buf.WriteString("---\n")
-				content, err := yaml.Marshal(workflow)
-				require.NoError(t, err)
-				buf.Write(content)
-				err = os.WriteFile(filepath.Join(dir, "Test_Workflow_3.yaml"), []byte(buf.String()), 0644)
+				filePath := filepath.Join(dir, "Test_Workflow_3.yaml")
+
+				yamlContent := []byte(`---
+id: "789"
+name: "Test Workflow 3"
+active: true
+`)
+				err := os.WriteFile(filePath, yamlContent, 0644)
 				require.NoError(t, err)
 			},
 		},
@@ -332,7 +327,6 @@ func TestRefreshCommand(t *testing.T) {
 				}
 			}
 
-			// Run validation function if provided
 			if tc.validateFiles != nil {
 				tc.validateFiles(t, directory)
 			}

@@ -22,7 +22,6 @@ THE SOFTWARE.
 package workflows
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,7 +31,6 @@ import (
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 // refreshCmd represents the refresh command
@@ -131,74 +129,6 @@ func ensureDirectoryExists(cmd *cobra.Command, directory string, dryRun bool) er
 	return nil
 }
 
-// cleanWorkflow removes all null and empty fields from a workflow structure
-func cleanWorkflow(workflow n8n.Workflow) map[string]interface{} {
-	workflowBytes, err := json.Marshal(workflow)
-	if err != nil {
-		return make(map[string]interface{})
-	}
-
-	var workflowMap map[string]interface{}
-	if err := json.Unmarshal(workflowBytes, &workflowMap); err != nil {
-		return make(map[string]interface{})
-	}
-
-	cleanMapRecursive(workflowMap)
-
-	delete(workflowMap, "createdAt")
-	delete(workflowMap, "updatedAt")
-
-	if _, exists := workflowMap["connections"]; !exists {
-		workflowMap["connections"] = make(map[string]interface{})
-	}
-
-	return workflowMap
-}
-
-// cleanMapRecursive removes all null values recursively from a map
-func cleanMapRecursive(m map[string]interface{}) {
-	for k, v := range m {
-		if v == nil {
-			delete(m, k)
-			continue
-		}
-
-		switch val := v.(type) {
-		case map[string]interface{}:
-			cleanMapRecursive(val)
-			if len(val) == 0 {
-				delete(m, k)
-			}
-		case []interface{}:
-			cleanSliceRecursive(val)
-			if len(val) == 0 {
-				delete(m, k)
-			}
-		case string:
-			if val == "" || val == "null" {
-				delete(m, k)
-			}
-		}
-	}
-}
-
-// cleanSliceRecursive removes all null values recursively from a slice
-func cleanSliceRecursive(s []interface{}) {
-	for i, v := range s {
-		if v == nil {
-			s[i] = nil
-			continue
-		}
-
-		switch val := v.(type) {
-		case map[string]interface{}:
-			cleanMapRecursive(val)
-		case []interface{}:
-			cleanSliceRecursive(val)
-		}
-	}
-}
-
 // extractLocalWorkflows reads local workflow files and returns a map of workflow IDs to file paths
 func extractLocalWorkflows(directory string) (map[string]string, error) {
 	localFiles := make(map[string]string)
@@ -262,35 +192,24 @@ func determineFilePathAndAction(workflow n8n.Workflow, localFiles map[string]str
 
 // serializeWorkflow serializes a workflow to JSON or YAML
 func serializeWorkflow(workflow n8n.Workflow, filePath string, minimal bool) ([]byte, error) {
-	var workflowToSerialize interface{} = workflow
-	if minimal {
-		workflowToSerialize = cleanWorkflow(workflow)
-	} else {
-		if workflow.Connections == nil {
-			workflowCopy := workflow
-			workflowCopy.Connections = make(map[string]interface{})
-			workflowToSerialize = workflowCopy
-		}
-	}
+	encoder := n8n.NewWorkflowEncoder(minimal)
 
 	ext := strings.ToLower(filepath.Ext(filePath))
 	if ext == ".yaml" || ext == ".yml" {
-		var buf strings.Builder
-		buf.WriteString("---\n")
-		encoder := yaml.NewEncoder(&buf)
-		encoder.SetIndent(2)
-		if err := encoder.Encode(workflowToSerialize); err != nil {
+		yamlData, err := encoder.EncodeToYAML(workflow)
+		if err != nil {
 			return nil, fmt.Errorf("error serializing workflow '%s' to YAML: %w", workflow.Name, err)
 		}
-		return []byte(buf.String()), nil
+
+		return yamlData, nil
 	}
 
-	content, err := json.MarshalIndent(workflowToSerialize, "", "  ")
+	jsonData, err := encoder.EncodeToJSON(workflow)
 	if err != nil {
 		return nil, fmt.Errorf("error serializing workflow '%s' to JSON: %w", workflow.Name, err)
 	}
 
-	return content, nil
+	return jsonData, nil
 }
 
 // workflowNeedsUpdate compares existing workflow file content with new content
@@ -308,92 +227,23 @@ func workflowNeedsUpdate(filePath string, existingPath string, content []byte, m
 		return true
 	}
 
-	ext := strings.ToLower(filepath.Ext(filePath))
-	if ext == ".yaml" || ext == ".yml" {
-		return compareYAMLContent(existingContent, content, minimal)
-	}
+	decoder := n8n.NewWorkflowDecoder()
 
-	if minimal {
-		return compareJSONContent(existingContent, content)
-	}
-
-	return string(existingContent) != string(content)
-}
-
-// compareYAMLContent compares two YAML contents
-func compareYAMLContent(existingContent, newContent []byte, minimal bool) bool {
-	existingContentStr := string(existingContent)
-	if strings.HasPrefix(existingContentStr, "---\n") {
-		existingContent = []byte(strings.TrimPrefix(existingContentStr, "---\n"))
-	}
-
-	newContentStr := string(newContent)
-	if strings.HasPrefix(newContentStr, "---\n") {
-		newContent = []byte(strings.TrimPrefix(newContentStr, "---\n"))
-	}
-
-	var existingWorkflow, newWorkflow n8n.Workflow
-	if yamlErr := yaml.Unmarshal(existingContent, &existingWorkflow); yamlErr != nil {
-		return true
-	}
-
-	if yamlErr := yaml.Unmarshal(newContent, &newWorkflow); yamlErr != nil {
-		return true
-	}
-
-	var existingJSON, newJSON []byte
-	var err error
-
-	if minimal {
-		existingClean := cleanWorkflow(existingWorkflow)
-		newClean := cleanWorkflow(newWorkflow)
-		existingJSON, err = json.Marshal(existingClean)
-		if err != nil {
-			return true
-		}
-		newJSON, err = json.Marshal(newClean)
-		if err != nil {
-			return true
-		}
-	} else {
-		existingJSON, err = json.Marshal(existingWorkflow)
-		if err != nil {
-			return true
-		}
-		newJSON, err = json.Marshal(newWorkflow)
-		if err != nil {
-			return true
-		}
-	}
-
-	return string(existingJSON) != string(newJSON)
-}
-
-// compareJSONContent compares two JSON contents
-func compareJSONContent(existingContent, newContent []byte) bool {
-	var existingWorkflow, newWorkflow n8n.Workflow
-	if jsonErr := json.Unmarshal(existingContent, &existingWorkflow); jsonErr != nil {
-		return true
-	}
-
-	if jsonErr := json.Unmarshal(newContent, &newWorkflow); jsonErr != nil {
-		return true
-	}
-
-	existingClean := cleanWorkflow(existingWorkflow)
-	newClean := cleanWorkflow(newWorkflow)
-	existingJSON, err := json.Marshal(existingClean)
+	existingWorkflow, err := decoder.DecodeFromBytes(existingContent)
 	if err != nil {
 		return true
 	}
 
-	newJSON, err := json.Marshal(newClean)
+	newWorkflow, err := decoder.DecodeFromBytes(content)
 	if err != nil {
 		return true
 	}
 
-	return string(existingJSON) != string(newJSON)
+	return rootcmd.DetectWorkflowDrift(existingWorkflow, newWorkflow, minimal)
 }
+
+// Both compareYAMLContent and compareJSONContent functions have been replaced
+// by the DetectWorkflowDrift utility function in the cmd package
 
 // processWorkflow handles processing of a single workflow
 func processWorkflow(cmd *cobra.Command, workflow n8n.Workflow, localFiles map[string]string,

@@ -22,12 +22,13 @@ You have the following tools available for development:
 ## Development Workflow
 
 1. Start by writing unit tests for your new features or commands (Using Test-driven development).
-2. Always review `Taskfile.yaml` for available development tasks.
-3. Always use existing types from n8n for consistency.
-4. Always prefer using early returns in your code to avoid deep nesting.
-5. Use `task cli -- <args>` to run the CLI during development.
-6. Always run `task lint` to verify and fix code errors before proceeding with the build.
-7. Use `task build` to build the CLI with proper version information.
-8. Use Cobra-CLI to generate new commands: `cobra-cli add <command-name>`
-9. Always fetch the latest documentation using context7 and fall back to fetch.
-10. When adding new commands, make sure to properly handle flags and implement the Run function.
+2. Never update CHANGELOG.md directly. It's automatically generated from commit messages.
+3. Always review `Taskfile.yaml` for available development tasks.
+4. Always use existing types from n8n for consistency.
+5. Always prefer using early returns in your code to avoid deep nesting.
+6. Use `task cli -- <args>` to run the CLI during development.
+7. Always run `task lint` to verify and fix code errors before proceeding with the build.
+8. Use `task build` to build the CLI with proper version information.
+9. Use Cobra-CLI to generate new commands: `cobra-cli add <command-name>`
+10. Always fetch the latest documentation using context7 and fall back to fetch.
+11. When adding new commands, make sure to properly handle flags and implement the Run function.
