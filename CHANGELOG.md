@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0-rc.2](https://github.com/edenreich/n8n-cli/compare/v0.4.0-rc.1...v0.4.0-rc.2) (2025-05-19)
+
+### 🐛 Bug Fixes
+
+* **encoder:** Change YAML indentation back to 2 spaces ([8115d5b](https://github.com/edenreich/n8n-cli/commit/8115d5bf236ec488cf027c1526781dc67cb77b3c))
+
 ## [0.4.0-rc.1](https://github.com/edenreich/n8n-cli/compare/v0.3.1...v0.4.0-rc.1) (2025-05-19)
 
 ### ✨ Features
