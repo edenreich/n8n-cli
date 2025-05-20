@@ -20,7 +20,7 @@ This example includes:
      - A summary of the contact message
      - Sentiment analysis
      - Message categorization
-     - Response suggestionsa
+     - Response suggestions
    - Sends detailed email notifications with AI insights
    - Returns a success response to the submitter
 
