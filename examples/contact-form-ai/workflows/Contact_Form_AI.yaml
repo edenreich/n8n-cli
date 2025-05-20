@@ -185,11 +185,7 @@ nodes:
     typeVersion: 1.2
 settings: {}
 tags:
-  - createdAt: "2025-05-20T06:12:18.778Z"
-    id: YdETOZI9z0WAqwC8
+  - id: YdETOZI9z0WAqwC8
     name: ai
-    updatedAt: "2025-05-20T06:12:18.778Z"
-  - createdAt: "2025-05-20T06:53:24.638Z"
-    id: qzoBad5Au6cpAbaq
+  - id: qzoBad5Au6cpAbaq
     name: contact
-    updatedAt: "2025-05-20T06:53:24.638Z"
