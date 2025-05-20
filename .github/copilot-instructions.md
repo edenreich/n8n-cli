@@ -10,6 +10,8 @@ Claude follows the instructions in this file to generate code. The instructions 
 - Claude don't adds comments before each line
 - Claude always adds docblocks to the functions
 - Claude always reads Taskfile.yaml to understand the tasks and their dependencies
+- Claude always use early returns in functions instead of nested if statements
+- Claude always writes tests for all functions
 - Claude always reads CLAUDE.md file for specific instructions
 
 For more info see the [CLAUDE.md](../CLAUDE.md) file.
