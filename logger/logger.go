@@ -13,14 +13,12 @@ var logger *zap.SugaredLogger
 
 // InitLogger initializes the global logger
 func InitLogger(debug bool) {
-	// Check both debug flag and environment variable
 	isDebug := debug || os.Getenv("DEBUG") == "1" || os.Getenv("DEBUG") == "true"
 
 	var zapLogger *zap.Logger
 	var err error
 
 	if isDebug {
-		// Development logger with more verbose output
 		cfg := zap.NewDevelopmentConfig()
 		cfg.EncoderConfig.TimeKey = "time"
 		cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -32,15 +30,12 @@ func InitLogger(debug bool) {
 			zap.AddCallerSkip(1),
 		)
 		if err != nil {
-			// If we can't initialize a development logger, fall back to production
 			zapLogger, _ = zap.NewProduction()
 		}
 
-		// Get a sugared logger for more convenient logging with formatting
 		logger = zapLogger.Sugar().Named("n8n-cli")
 		logger.Debug("Debug logging enabled")
 	} else {
-		// Production logger with only warnings and errors
 		cfg := zap.NewProductionConfig()
 		cfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 		zapLogger, _ = cfg.Build()
