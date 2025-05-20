@@ -34,9 +34,9 @@ This document outlines essential features for the n8n-cli tool based on the gene
 
 ### Tags Management
 
-- [ ] List tags
-- [ ] Add/remove tags to workflows
-- [ ] Create new tags
+- [ ] ~List tags~
+- [x] Add/remove tags to workflows
+- [x] Create new tags
 
 ### Project Management
 
