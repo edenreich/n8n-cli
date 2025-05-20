@@ -141,23 +141,25 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	updatedWorkflows := make(map[string]bool)
 
 	for _, file := range files {
-		if !file.IsDir() {
-			ext := strings.ToLower(filepath.Ext(file.Name()))
-			if ext == ".json" || ext == ".yaml" || ext == ".yml" {
-				filePath := filepath.Join(directory, file.Name())
+		if file.IsDir() {
+			continue
+		}
 
-				if workflowID, err := ExtractWorkflowIDFromFile(filePath); err == nil && workflowID != "" {
-					localWorkflowIDs[workflowID] = true
-				}
+		ext := strings.ToLower(filepath.Ext(file.Name()))
+		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+			filePath := filepath.Join(directory, file.Name())
 
-				result, err := ProcessWorkflowFile(client, cmd, filePath, dryRun, prune)
-				if err != nil {
-					return fmt.Errorf("error processing workflow file %s: %w", filePath, err)
-				}
+			if workflowID, err := ExtractWorkflowIDFromFile(filePath); err == nil && workflowID != "" {
+				localWorkflowIDs[workflowID] = true
+			}
 
-				if result.WorkflowID != "" {
-					updatedWorkflows[result.WorkflowID] = true
-				}
+			result, err := ProcessWorkflowFile(client, cmd, filePath, dryRun, prune)
+			if err != nil {
+				return fmt.Errorf("error processing workflow file %s: %w", filePath, err)
+			}
+
+			if result.WorkflowID != "" {
+				updatedWorkflows[result.WorkflowID] = true
 			}
 		}
 	}
@@ -248,148 +250,42 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 
 	result.Name = workflow.Name
 
-	var w *n8n.Workflow
 	var remoteWorkflow *n8n.Workflow
 
-	if workflow.Id != nil && *workflow.Id != "" {
-		remoteWorkflow, err = client.GetWorkflow(*workflow.Id)
-
-		if err != nil {
-			dryRunMsg := fmt.Sprintf("Would create workflow '%s' with ID %s from %s (ID specified but not found on server)", workflow.Name, *workflow.Id, filename)
-
-			err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-				var err error
-				w, err = client.CreateWorkflow(&workflow)
-				if err != nil {
-					return "", fmt.Errorf("error creating workflow: %w", err)
-				}
-				result.Created = true
-				return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
-			})
-
-			if err != nil {
-				return result, err
-			}
-		} else {
-			changes := DetectWorkflowChanges(&workflow, remoteWorkflow)
-
-			if changes.NeedsUpdate {
-				dryRunMsg := fmt.Sprintf("Would update workflow '%s' (ID: %s) from %s", workflow.Name, *workflow.Id, filename)
-
-				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-					var err error
-					w, err = client.UpdateWorkflow(*workflow.Id, &workflow)
-					if err != nil {
-						return "", fmt.Errorf("error updating workflow: %w", err)
-					}
-					result.Updated = true
-					return fmt.Sprintf("Updated workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
-				})
-
-				if err != nil {
-					return result, err
-				}
-			} else {
-				w = remoteWorkflow
-				if dryRun {
-					cmd.Printf("No content changes for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
-				} else {
-					cmd.Printf("No changes needed for workflow '%s' (ID: %s) from %s\n", workflow.Name, *workflow.Id, filename)
-				}
-			}
-		}
-	} else {
-		dryRunMsg := fmt.Sprintf("Would create workflow '%s' from %s", workflow.Name, filename)
-
-		err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-			var err error
-			w, err = client.CreateWorkflow(&workflow)
-			if err != nil {
-				return "", fmt.Errorf("error creating workflow: %w", err)
-			}
-			result.Created = true
-			return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
-		})
-
+	if workflow.Id == nil || *workflow.Id == "" {
+		result, err = CreateWorkflow(client, cmd, &workflow, filename, dryRun, result)
 		if err != nil {
 			return result, err
 		}
+		return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 	}
 
-	var changes WorkflowChange
-	if remoteWorkflow != nil {
-		changes = DetectWorkflowChanges(&workflow, remoteWorkflow)
-	} else {
-		if workflow.Active != nil && *workflow.Active {
-			changes.NeedsActivation = true
-		} else if workflow.Active != nil && !*workflow.Active {
-			changes.NeedsDeactivation = true
+	remoteWorkflow, err = client.GetWorkflow(*workflow.Id)
+	if err != nil {
+		result, err = CreateWorkflowWithID(client, cmd, &workflow, filename, dryRun, result)
+		if err != nil {
+			return result, err
 		}
-		if workflow.Tags != nil && len(*workflow.Tags) > 0 {
-			changes.NeedsTagsUpdate = true
-		}
+		return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 	}
 
-	if w != nil {
-		workflowID := ""
-		workflowName := workflow.Name
-
-		if w.Id != nil {
-			workflowID = *w.Id
-			result.WorkflowID = workflowID
+	workflowChanges := DetectWorkflowChanges(&workflow, remoteWorkflow)
+	if !workflowChanges.NeedsUpdate {
+		result.WorkflowID = *remoteWorkflow.Id
+		status := "No content changes for"
+		if !dryRun {
+			status = "No changes needed for"
 		}
-
-		if w.Name != "" {
-			workflowName = w.Name
-		}
-
-		idInfo := ""
-		if workflowID != "" {
-			idInfo = fmt.Sprintf("(ID: %s)", workflowID)
-		} else {
-			idInfo = "(after creation)"
-		}
-
-		if workflow.Active != nil {
-			if *workflow.Active && changes.NeedsActivation {
-				dryRunMsg := fmt.Sprintf("Would activate workflow '%s' %s", workflowName, idInfo)
-
-				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-					_, err := client.ActivateWorkflow(workflowID)
-					if err != nil {
-						return "", fmt.Errorf("error activating workflow: %w", err)
-					}
-					return fmt.Sprintf("Activated workflow '%s' %s", workflowName, idInfo), nil
-				})
-
-				if err != nil {
-					return result, err
-				}
-			} else if !*workflow.Active && changes.NeedsDeactivation {
-				dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
-
-				err = ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
-					_, err := client.DeactivateWorkflow(workflowID)
-					if err != nil {
-						return "", fmt.Errorf("error deactivating workflow: %w", err)
-					}
-					return fmt.Sprintf("Deactivated workflow '%s' %s", workflowName, idInfo), nil
-				})
-
-				if err != nil {
-					return result, err
-				}
-			}
-		}
-
-		if changes.NeedsTagsUpdate && workflow.Tags != nil && len(*workflow.Tags) > 0 {
-			if err := HandleTagUpdates(client, cmd, &workflow, workflowID, dryRun); err != nil {
-				return result, err
-			}
-		}
+		cmd.Printf("%s workflow '%s' (ID: %s) from %s\n", status, workflow.Name, *workflow.Id, filename)
+		return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 	}
 
-	return result, nil
+	result, err = UpdateWorkflow(client, cmd, &workflow, filename, dryRun, result)
+	if err != nil {
+		return result, err
+	}
+
+	return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 }
 
 // ExtractWorkflowIDFromFile reads a workflow file and extracts the workflow ID if present
@@ -470,14 +366,6 @@ func PruneWorkflows(client n8n.ClientInterface, cmd *cobra.Command, localWorkflo
 	return nil
 }
 
-// WorkflowChange represents possible changes between local and remote workflows
-type WorkflowChange struct {
-	NeedsUpdate       bool
-	NeedsActivation   bool
-	NeedsDeactivation bool
-	NeedsTagsUpdate   bool
-}
-
 // ExecuteOrDryRun is a helper function that either performs an action or shows what would happen
 // based on whether dry run mode is enabled
 func ExecuteOrDryRun(cmd *cobra.Command, dryRun bool, dryRunMsg string, fn func() (string, error)) error {
@@ -496,6 +384,14 @@ func ExecuteOrDryRun(cmd *cobra.Command, dryRun bool, dryRunMsg string, fn func(
 	}
 
 	return nil
+}
+
+// WorkflowChange represents possible changes between local and remote workflows
+type WorkflowChange struct {
+	NeedsUpdate       bool
+	NeedsActivation   bool
+	NeedsDeactivation bool
+	NeedsTagsUpdate   bool
 }
 
 // DetectWorkflowChanges compares local and remote workflows to detect what changes are needed
@@ -575,4 +471,131 @@ func HandleTagUpdates(client n8n.ClientInterface, cmd *cobra.Command, workflow *
 		}
 		return fmt.Sprintf("Updated tags for workflow '%s' (ID: %s)", workflow.Name, workflowID), nil
 	})
+}
+
+// CreateWorkflow creates a new workflow without ID
+func CreateWorkflow(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, filename string, dryRun bool, result WorkflowResult) (WorkflowResult, error) {
+	dryRunMsg := fmt.Sprintf("Would create workflow '%s' from %s", workflow.Name, filename)
+
+	err := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+		w, err := client.CreateWorkflow(workflow)
+		if err != nil {
+			return "", fmt.Errorf("error creating workflow: %w", err)
+		}
+		result.Created = true
+		result.WorkflowID = *w.Id
+		return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+	})
+
+	return result, err
+}
+
+// CreateWorkflowWithID creates a new workflow with a specified ID
+func CreateWorkflowWithID(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, filename string, dryRun bool, result WorkflowResult) (WorkflowResult, error) {
+	dryRunMsg := fmt.Sprintf("Would create workflow '%s' with ID %s from %s (ID specified but not found on server)", workflow.Name, *workflow.Id, filename)
+
+	err := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+		w, err := client.CreateWorkflow(workflow)
+		if err != nil {
+			return "", fmt.Errorf("error creating workflow: %w", err)
+		}
+		result.Created = true
+		result.WorkflowID = *w.Id
+		return fmt.Sprintf("Created workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+	})
+
+	return result, err
+}
+
+// UpdateWorkflow updates an existing workflow
+func UpdateWorkflow(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, filename string, dryRun bool, result WorkflowResult) (WorkflowResult, error) {
+	dryRunMsg := fmt.Sprintf("Would update workflow '%s' (ID: %s) from %s", workflow.Name, *workflow.Id, filename)
+
+	err := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+		w, err := client.UpdateWorkflow(*workflow.Id, workflow)
+		if err != nil {
+			return "", fmt.Errorf("error updating workflow: %w", err)
+		}
+		result.Updated = true
+		result.WorkflowID = *w.Id
+		return fmt.Sprintf("Updated workflow '%s' (ID: %s) from %s", w.Name, *w.Id, filename), nil
+	})
+
+	return result, err
+}
+
+// processActivationAndTags handles activation/deactivation and tag updates for a workflow
+func processActivationAndTags(client n8n.ClientInterface, cmd *cobra.Command, workflow *n8n.Workflow, result WorkflowResult, dryRun bool) (WorkflowResult, error) {
+	if result.WorkflowID == "" {
+		return result, nil
+	}
+
+	workflowID := result.WorkflowID
+	workflowName := workflow.Name
+
+	idInfo := fmt.Sprintf("(ID: %s)", workflowID)
+
+	var changes WorkflowChange
+	if result.Created {
+		if workflow.Active != nil && *workflow.Active {
+			changes.NeedsActivation = true
+		}
+		if workflow.Tags != nil && len(*workflow.Tags) > 0 {
+			changes.NeedsTagsUpdate = true
+		}
+	} else {
+		remoteWorkflow, fetchErr := client.GetWorkflow(workflowID)
+		if fetchErr != nil {
+			cmd.Printf("Warning: Could not retrieve workflow details for activation/tag processing: %v\n", fetchErr)
+
+			if workflow.Active != nil && *workflow.Active {
+				changes.NeedsActivation = true
+			}
+			if workflow.Tags != nil && len(*workflow.Tags) > 0 {
+				changes.NeedsTagsUpdate = true
+			}
+		} else {
+			changes = DetectWorkflowChanges(workflow, remoteWorkflow)
+		}
+	}
+
+	if workflow.Active != nil {
+		if *workflow.Active && changes.NeedsActivation {
+			dryRunMsg := fmt.Sprintf("Would activate workflow '%s' %s", workflowName, idInfo)
+
+			activateErr := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+				_, err := client.ActivateWorkflow(workflowID)
+				if err != nil {
+					return "", fmt.Errorf("error activating workflow: %w", err)
+				}
+				return fmt.Sprintf("Activated workflow '%s' %s", workflowName, idInfo), nil
+			})
+
+			if activateErr != nil {
+				return result, activateErr
+			}
+		} else if !*workflow.Active && changes.NeedsDeactivation {
+			dryRunMsg := fmt.Sprintf("Would deactivate workflow '%s' %s", workflowName, idInfo)
+
+			deactivateErr := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+				_, err := client.DeactivateWorkflow(workflowID)
+				if err != nil {
+					return "", fmt.Errorf("error deactivating workflow: %w", err)
+				}
+				return fmt.Sprintf("Deactivated workflow '%s' %s", workflowName, idInfo), nil
+			})
+
+			if deactivateErr != nil {
+				return result, deactivateErr
+			}
+		}
+	}
+
+	if changes.NeedsTagsUpdate && workflow.Tags != nil && len(*workflow.Tags) > 0 {
+		if tagErr := HandleTagUpdates(client, cmd, workflow, workflowID, dryRun); tagErr != nil {
+			return result, tagErr
+		}
+	}
+
+	return result, nil
 }
