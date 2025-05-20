@@ -83,8 +83,6 @@ This repository uses:
 
 ## 🤝 Development Process
 
-To contribute:
-
 1. Make changes to workflows in your n8n instance
 2. Run the sync workflow to create a PR with those changes
 3. Review the PR and merge it to maintain version history
