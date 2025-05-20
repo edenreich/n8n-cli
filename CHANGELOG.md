@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2](https://github.com/edenreich/n8n-cli/compare/v0.5.1...v0.5.2) (2025-05-20)
+
+### ♻️ Improvements
+
+* **sync:** Use early return instead of nested if checks ([#23](https://github.com/edenreich/n8n-cli/issues/23)) ([a0ebc43](https://github.com/edenreich/n8n-cli/commit/a0ebc436a0871f79ae3954e2a92c0123d501dc7f))
+
+### 🐛 Bug Fixes
+
+* **docs:** Correct typo in response suggestions in README ([85d13ab](https://github.com/edenreich/n8n-cli/commit/85d13ab7b6f87ca47070d6803317a0dc38c99bfc))
+* **docs:** Update README to reflect Groq API usage instead of OpenAI API ([766a0af](https://github.com/edenreich/n8n-cli/commit/766a0af6786f09d20f1046b01427df40c472f39b))
+* Enhance CleanWorkflow to preserve and clean tags ([#24](https://github.com/edenreich/n8n-cli/issues/24)) ([e125820](https://github.com/edenreich/n8n-cli/commit/e125820b7fd0b6d1a70514591d58c856ff02ef9a))
+* **tags:** Implement tag creation and retrieval in n8n client ([#25](https://github.com/edenreich/n8n-cli/issues/25)) ([6cc9058](https://github.com/edenreich/n8n-cli/commit/6cc90583b02ecda8062347462d3a70650a751918))
+
+### 📚 Documentation
+
+* Update Copilot instructions for clarity and structure ([495d134](https://github.com/edenreich/n8n-cli/commit/495d134251149ed02fefdba3e2ac6c6b1f34184b))
+* Update README to include examples for contact form and AI-enhanced contact form ([f6ca96f](https://github.com/edenreich/n8n-cli/commit/f6ca96f505ceda1fee87d9d6e7b003b9a5e732fa))
+
+### 🔧 Miscellaneous
+
+* Add instruction for running tests before submitting code in Copilot guidelines ([f930b53](https://github.com/edenreich/n8n-cli/commit/f930b53d2346e7b50ebc7f59a7673b01ba589125))
+* Add instruction for verifying linter status in Copilot guidelines ([dd3b0cb](https://github.com/edenreich/n8n-cli/commit/dd3b0cb41c52719d3690976ad9bac9a98ca98ae1))
+* Cleanup - some leftover comments from the LLM ([24a1416](https://github.com/edenreich/n8n-cli/commit/24a141661002548fc3222cd92f86f07ed72e630c))
+* Correct Claude's instructions for early returns and test writing ([f66ce4e](https://github.com/edenreich/n8n-cli/commit/f66ce4e86dde8dca69752de806f8ecbf4574e524))
+* Update Copilot instructions for commit message format and correct grammar ([c61f080](https://github.com/edenreich/n8n-cli/commit/c61f0807411cb339e425b5a6538bf092059e0532))
+
 ## [0.5.1](https://github.com/edenreich/n8n-cli/compare/v0.5.0...v0.5.1) (2025-05-19)
 
 ### ♻️ Improvements
