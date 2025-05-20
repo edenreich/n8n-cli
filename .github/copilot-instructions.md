@@ -12,6 +12,7 @@ Claude follows the instructions in this file to generate code. The instructions 
 - Claude always reads Taskfile.yaml to understand the tasks and their dependencies
 - Claude always use early returns in functions instead of nested if statements
 - Claude always writes tests for all functions
+- Claude always verify that linter is passing with `task lint`
 - Claude always reads CLAUDE.md file for specific instructions
 
 For more info see the [CLAUDE.md](../CLAUDE.md) file.
