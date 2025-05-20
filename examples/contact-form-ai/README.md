@@ -7,7 +7,7 @@ This example demonstrates how to set up an AI-enhanced contact form workflow in 
 - Task installed: [Task](https://taskfile.dev/)
 - The CLI installed: `task install-cli`
 - An n8n instance (self-hosted or cloud)
-- OpenAI API key
+- Groq API key
 
 ## Overview
 
@@ -20,7 +20,7 @@ This example includes:
      - A summary of the contact message
      - Sentiment analysis
      - Message categorization
-     - Response suggestions
+     - Response suggestionsa
    - Sends detailed email notifications with AI insights
    - Returns a success response to the submitter
 
@@ -56,14 +56,14 @@ If you don't already have an n8n instance, you can:
 - Self-host using [Docker](https://docs.n8n.io/hosting/installation/docker/)
 - Install [locally](https://docs.n8n.io/hosting/installation/npm/)
 
-### 2. Set Up OpenAI Credentials in n8n
+### 2. Set Up Groq Credentials in n8n
 
-The workflow uses OpenAI for AI processing, so you need to set up credentials:
+The workflow uses Groq for AI processing, so you need to set up credentials:
 
 1. In your n8n instance, go to **Settings > Credentials**
 2. Click **New Credential**
-3. Select **OpenAI API**
-4. Enter your OpenAI API key
+3. Select **Groq API**
+4. Enter your Groq API key
 5. Save the credential
 
 ### 3. Obtain n8n API Key
@@ -161,7 +161,7 @@ task setup-env
 
 2. **Webhook Receiver**: The n8n workflow receives the submission via a webhook.
 
-3. **AI Processing**: The OpenAI node analyzes the message and provides:
+3. **AI Processing**: The Groq node analyzes the message and provides:
 
    - A concise summary
    - Message categorization
@@ -195,7 +195,7 @@ This allows you to see how the AI processes different types of messages and gene
 
 ## Customizing the AI Prompt
 
-You can customize how the AI processes the contact form messages by editing the prompt in the OpenAI node:
+You can customize how the AI processes the contact form messages by editing the prompt in the Groq node:
 
 1. In the n8n workflow, click on the "AI Summary" node
 2. Modify the "Prompt" field to change how the AI analyzes the messages
@@ -203,7 +203,7 @@ You can customize how the AI processes the contact form messages by editing the 
 
 ## Security Considerations
 
-1. **API Key Protection**: Keep your OpenAI and n8n API keys secure
+1. **API Key Protection**: Keep your Groq and n8n API keys secure
 2. **HTTPS**: Always use HTTPS for your webhook
 3. **CORS**: The example restricts origins to a specific domain
 4. **Input Validation**: The form includes basic validation
@@ -213,10 +213,10 @@ You can customize how the AI processes the contact form messages by editing the 
 
 If you encounter issues:
 
-1. Check both webhook and OpenAI API configurations in n8n
+1. Check both webhook and Groq API configurations in n8n
 2. Verify CORS settings if submitting from a different domain
 3. Check your email configurations in n8n
-4. Review OpenAI API quotas if AI processing fails
+4. Review Groq API quotas if AI processing fails
 5. Examine the n8n logs for any errors
 
 ## Learn More
@@ -225,6 +225,6 @@ For more information, refer to:
 
 - [n8n-cli Documentation](https://github.com/edenreich/n8n-cli)
 - [n8n Documentation](https://docs.n8n.io/)
-- [OpenAI Documentation](https://platform.openai.com/docs)
+- [Groq Documentation](https://console.groq.com/docs)
 - [Webhook Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
-- [OpenAI Node Documentation](https://docs.n8n.io/integrations/builtin/app-nodes/n8n-nodes-base.openai/)
+- [Tools Agent Node Documentation](https://docs.n8n.io/integrations/builtin/cluster-nodes/root-nodes/n8n-nodes-langchain.agent/tools-agent/)
