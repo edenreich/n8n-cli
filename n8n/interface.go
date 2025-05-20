@@ -23,6 +23,10 @@ type ClientInterface interface {
 	GetWorkflowTags(id string) (WorkflowTags, error)
 	// UpdateWorkflowTags updates the tags of a workflow by its ID
 	UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, error)
+	// CreateTag creates a new tag in n8n
+	CreateTag(tagName string) (*Tag, error)
+	// GetTags fetches all tags from n8n
+	GetTags() (*TagList, error)
 }
 
 // Ensure Client implements ClientInterface

@@ -419,3 +419,97 @@ func (c *Client) UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, err
 
 	return tags, nil
 }
+
+// CreateTag creates a new tag in n8n
+func (c *Client) CreateTag(tagName string) (*Tag, error) {
+	url := fmt.Sprintf("%s/tags", c.baseURL)
+
+	tag := Tag{
+		Name: tagName,
+	}
+
+	body, err := json.Marshal(tag)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling tag: %w", err)
+	}
+
+	c.logDebug("CREATE TAG REQUEST: %s", string(body))
+
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, body, "", "  "); err == nil {
+		c.logDebug("CREATE TAG FORMATTED JSON:\n%s", prettyJSON.String())
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.Warnf("Error closing response body: %v", err)
+		}
+	}()
+
+	resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
+	c.logDebug("CREATE TAG RESPONSE (Status: %d): %s", resp.StatusCode, string(respBody))
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, respBody)
+	}
+
+	var createdTag Tag
+	if err := json.NewDecoder(bytes.NewBuffer(respBody)).Decode(&createdTag); err != nil {
+		return nil, err
+	}
+
+	return &createdTag, nil
+}
+
+// GetTags fetches all tags from n8n
+func (c *Client) GetTags() (*TagList, error) {
+	url := fmt.Sprintf("%s/tags", c.baseURL)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.Warnf("Error closing response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var tags TagList
+	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+		return nil, err
+	}
+
+	return &tags, nil
+}

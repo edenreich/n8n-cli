@@ -184,4 +184,10 @@ nodes:
     type: '@n8n/n8n-nodes-langchain.outputParserStructured'
     typeVersion: 1.2
 settings: {}
-tags: []
+tags:
+  - id: YdETOZI9z0WAqwC8
+    name: ai
+  - id: qzoBad5Au6cpAbaq
+    name: contact
+  - id: OFfLoldgq9BFjAe8
+    name: form
