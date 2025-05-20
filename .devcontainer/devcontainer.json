@@ -38,12 +38,13 @@
         "cSpell.files": ["**/*.md"],
         "git.enableCommitSigning": true,
         "dev.containers.copyGitConfig": true,
+        "github.copilot.chat.commitMessageGeneration.instructions": [
+          {
+            "text": "Use conventional commit message format."
+          }
+        ],
         "mcp": {
           "servers": {
-            "fetch": {
-              "command": "docker",
-              "args": ["run", "-i", "--rm", "mcp/fetch"]
-            },
             "Context7": {
               "command": "docker",
               "args": [
