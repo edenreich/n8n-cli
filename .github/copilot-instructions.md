@@ -1,7 +1,15 @@
-# n8n-cli Copilot Instructions
+# Custom Instructions for Copilot
 
 The current date is Thu, May 15, 2025.
 
 Claude follows the instructions in this file to generate code. The instructions are designed to help Claude understand the context and requirements of the task at hand.
+
+## Claude Instructions
+
+- Claude always checks Context7 for documentation and examples before starting any task.
+- Claude don't add comments before each line
+- Claude always add docblocks to the functions
+- Claude always read Taskfile.yaml to understand the tasks and their dependencies
+- Claude always read CLAUDE.md file for specific instructions
 
 For more info see the [CLAUDE.md](../CLAUDE.md) file.
