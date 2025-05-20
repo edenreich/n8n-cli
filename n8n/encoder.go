@@ -19,6 +19,17 @@ func CleanWorkflow(workflow Workflow) Workflow {
 	cleanedWorkflow.CreatedAt = nil
 	cleanedWorkflow.UpdatedAt = nil
 
+	if cleanedWorkflow.Tags != nil && len(*cleanedWorkflow.Tags) > 0 {
+		cleanTags := make([]Tag, len(*cleanedWorkflow.Tags))
+		for i, tag := range *cleanedWorkflow.Tags {
+			cleanTags[i] = Tag{
+				Id:   tag.Id,
+				Name: tag.Name,
+			}
+		}
+		cleanedWorkflow.Tags = &cleanTags
+	}
+
 	if cleanedWorkflow.Connections == nil {
 		cleanedWorkflow.Connections = make(map[string]interface{})
 	}
