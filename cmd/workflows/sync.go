@@ -449,21 +449,66 @@ func HandleTagUpdates(client n8n.ClientInterface, cmd *cobra.Command, workflow *
 		return nil
 	}
 
+	var existingTags map[string]string
+	var err error
+
+	if dryRun {
+		existingTags = make(map[string]string)
+	} else {
+		existingTags, err = getExistingTagsMap(client)
+		if err != nil {
+			return fmt.Errorf("error fetching existing tags: %w", err)
+		}
+	}
+
 	var tagIDs n8n.TagIds
 	for _, tag := range *workflow.Tags {
 		if tag.Id != nil && *tag.Id != "" {
 			tagIDs = append(tagIDs, struct {
 				Id string `json:"id"`
 			}{Id: *tag.Id})
+			continue
+		}
+
+		if dryRun {
+			cmd.Printf("Would create tag '%s' for workflow '%s'\n", tag.Name, workflow.Name)
+			continue
+		}
+
+		if tagID, exists := existingTags[tag.Name]; exists {
+			tagIDs = append(tagIDs, struct {
+				Id string `json:"id"`
+			}{Id: tagID})
+			continue
+		}
+
+		dryRunMsg := fmt.Sprintf("Would create tag '%s' for workflow '%s'", tag.Name, workflow.Name)
+		createErr := ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
+			createdTag, err := client.CreateTag(tag.Name)
+			if err != nil {
+				return "", fmt.Errorf("error creating tag '%s': %w", tag.Name, err)
+			}
+
+			if createdTag.Id != nil {
+				tagIDs = append(tagIDs, struct {
+					Id string `json:"id"`
+				}{Id: *createdTag.Id})
+				existingTags[tag.Name] = *createdTag.Id
+			}
+
+			return fmt.Sprintf("Created tag '%s' (ID: %s)", tag.Name, *createdTag.Id), nil
+		})
+
+		if createErr != nil {
+			return createErr
 		}
 	}
 
-	if len(tagIDs) == 0 {
+	if len(tagIDs) == 0 && !dryRun {
 		return nil
 	}
 
 	dryRunMsg := fmt.Sprintf("Would update tags for workflow '%s' (ID: %s)", workflow.Name, workflowID)
-
 	return ExecuteOrDryRun(cmd, dryRun, dryRunMsg, func() (string, error) {
 		_, err := client.UpdateWorkflowTags(workflowID, tagIDs)
 		if err != nil {
@@ -598,4 +643,24 @@ func processActivationAndTags(client n8n.ClientInterface, cmd *cobra.Command, wo
 	}
 
 	return result, nil
+}
+
+// getExistingTagsMap fetches existing tags from n8n and returns a map of tag name to tag ID
+func getExistingTagsMap(client n8n.ClientInterface) (map[string]string, error) {
+	tagMap := make(map[string]string)
+
+	tagList, err := client.GetTags()
+	if err != nil {
+		return nil, fmt.Errorf("error fetching tags: %w", err)
+	}
+
+	if tagList != nil && tagList.Data != nil {
+		for _, tag := range *tagList.Data {
+			if tag.Id != nil {
+				tagMap[tag.Name] = *tag.Id
+			}
+		}
+	}
+
+	return tagMap, nil
 }
