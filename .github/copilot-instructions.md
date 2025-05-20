@@ -6,7 +6,7 @@ Claude follows the instructions in this file to generate code. The instructions 
 
 ## Claude Instructions
 
-- Claude always checks Context7 for documentation and examples before starting any task.
+- Claude always checks Context7 for documentation and examples before starting any task
 - Claude don't adds comments before each line
 - Claude always adds docblocks to the functions
 - Claude always reads Taskfile.yaml to understand the tasks and their dependencies
