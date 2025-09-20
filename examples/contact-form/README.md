@@ -125,6 +125,21 @@ task logs-mail   # Mailhog logs
 task down
 ```
 
+**CLI Options for Docker:**
+
+You can use the n8n-cli in Docker with two different approaches:
+
+1. **Standard CLI (Downloaded)**: Use the `cli` service which downloads and installs the latest release:
+   ```bash
+   docker-compose run --rm cli n8n workflows list
+   ```
+
+2. **Local CLI (Built from Source)**: Use the `cli-local` service which builds the CLI from the source code in the parent repository:
+   ```bash
+   docker-compose run --rm cli-local n8n workflows list
+   ```
+   This is useful when developing or testing changes to the CLI itself.
+
 **First-time setup:**
 1. Access n8n at http://localhost:5678
 2. Create your admin account
