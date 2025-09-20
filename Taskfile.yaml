@@ -43,14 +43,12 @@ tasks:
   build:
     desc: 'Build the n8n CLI with version information'
     cmds:
-      - go build -ldflags="{{.LD_FLAGS}}" -o ./bin/n8n main.go
+      - go build -ldflags="{{.LD_FLAGS}}" -o ./bin/n8n .
 
   install:
     desc: 'Build and install the n8n CLI to $GOPATH/bin'
-    deps:
-      - build
     cmds:
-      - go install -ldflags="{{.LD_FLAGS}}" .
+      - go build -ldflags="{{.LD_FLAGS}}" -o $(go env GOPATH)/bin/n8n .
 
   test-unit:
     desc: 'Run only unit tests'

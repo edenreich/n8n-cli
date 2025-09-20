@@ -2,6 +2,50 @@
 
 A complete example demonstrating how to build, deploy, and manage a contact form workflow using n8n-cli with automated GitHub Actions deployment.
 
+## Table of Contents
+
+- [🎯 What You'll Learn](#-what-youll-learn)
+- [📦 What's Included](#-whats-included)
+- [📁 Project Structure](#-project-structure)
+- [🚀 Quick Start](#-quick-start)
+  - [Prerequisites](#prerequisites)
+  - [Step 1: Clone and Setup](#step-1-clone-and-setup)
+  - [Step 2: Choose Your n8n Setup](#step-2-choose-your-n8n-setup)
+  - [Step 3: Configure Environment](#step-3-configure-environment)
+  - [Step 4: Deploy the Workflow](#step-4-deploy-the-workflow)
+  - [Step 5: Configure the Contact Form](#step-5-configure-the-contact-form)
+- [✅ Testing Your Setup](#-testing-your-setup)
+  - [Local Testing with Mailhog](#local-testing-with-mailhog)
+  - [Production Testing](#production-testing)
+  - [Debugging Tips](#debugging-tips)
+- [🎨 Customization Guide](#-customization-guide)
+  - [Workflow Modifications](#workflow-modifications)
+  - [Common Customizations](#common-customizations)
+  - [Deployment After Changes](#deployment-after-changes)
+- [🛠️ Development Commands](#️-development-commands)
+  - [Quick Reference](#quick-reference)
+  - [Docker Environment](#docker-environment)
+  - [Workflow Management](#workflow-management)
+  - [Development Tools](#development-tools)
+- [📧 Email Configuration](#-email-configuration)
+  - [Local Development (Mailhog)](#local-development-mailhog)
+  - [Production Email Setup](#production-email-setup)
+  - [Setting Credentials in n8n](#setting-credentials-in-n8n)
+- [🔒 Security Best Practices](#-security-best-practices)
+  - [Webhook Security](#webhook-security)
+  - [CORS Configuration](#cors-configuration)
+  - [API Key Management](#api-key-management)
+  - [Input Validation](#input-validation)
+- [🐛 Troubleshooting](#-troubleshooting)
+  - [Common Issues and Solutions](#common-issues-and-solutions)
+  - [Debug Commands](#debug-commands)
+  - [Getting Help](#getting-help)
+- [📚 Resources](#-resources)
+  - [Documentation](#documentation)
+  - [Tutorials](#tutorials)
+  - [Community](#community)
+- [📄 License](#-license)
+
 ## 🎯 What You'll Learn
 
 - Setting up a webhook-triggered n8n workflow for form processing
@@ -286,11 +330,20 @@ task help        # Show all available commands
 
 ### Local Development (Mailhog)
 
-No configuration needed! Mailhog automatically catches all emails:
+Perfect for testing! Mailhog catches all emails locally:
 - SMTP Server: `mailhog`
 - Port: `1025`
 - No authentication required
 - View emails at: http://localhost:8025
+
+**Setting up in n8n:**
+1. Go to **Credentials** → **New** → **Email (SMTP)**
+2. Name: `Mailhog Local`
+3. Host: `mailhog`, Port: `1025`
+4. Leave user/password empty, disable SSL/TLS
+5. Save and update workflow to use this credential
+
+**Important:** For production, replace with a real email provider (see below)
 
 ### Production Email Setup
 

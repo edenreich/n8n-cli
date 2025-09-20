@@ -1,5 +1,32 @@
 ---
 services:
+  cli:
+    image: ubuntu:24.04
+    volumes:
+      - ./:/home/ubuntu/app
+    working_dir: /home/ubuntu/app
+    environment:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
+    env_file:
+      - .env
+    command:
+      - bash
+      - -c
+      - "apt-get update && apt-get install -y curl && curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh && bash"
+
+  cli-local:
+    image: golang:1.25-alpine
+    volumes:
+      - ../..:/go/src/project
+      - ./:/go/src/example
+    working_dir: /go/src/project
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - "go build -o $(go env GOPATH)/bin/n8n . && cd /go/src/example && sh"
+
   n8n:
     image: n8nio/n8n:latest
     container_name: contact-form-n8n
