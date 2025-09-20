@@ -43,12 +43,6 @@ tasks:
       - echo "Fetching workflow execution history..."
       - n8n workflows executions
 
-  preview:
-    desc: Start a local web server to preview the HTML form
-    cmds:
-      - echo "Starting web server on http://localhost:8000..."
-      - python3 -m http.server 8000 || python -m SimpleHTTPServer 8000
-
   setup-env:
     desc: Create a template .env file (won't overwrite existing)
     cmds:
@@ -63,31 +57,32 @@ tasks:
         fi
 
   up:
-    desc: Start n8n and mailhog with docker-compose
+    desc: Start n8n, mailhog, and nginx with docker compose
     cmds:
-      - echo "Starting n8n and mailhog..."
-      - docker-compose up -d
+      - echo "Starting n8n, mailhog, and nginx..."
+      - docker compose up -d --build
       - echo "n8n is available at http://localhost:5678"
       - echo "Mailhog is available at http://localhost:8025"
+      - echo "Contact form is available at http://localhost:8080"
 
   down:
-    desc: Stop n8n and mailhog containers
+    desc: Stop all containers
     cmds:
       - echo "Stopping containers..."
-      - docker-compose down
+      - docker compose down
 
   logs:
     desc: Show logs from n8n container
     cmds:
-      - docker-compose logs -f n8n
+      - docker compose logs -f n8n
 
   logs-mail:
     desc: Show logs from mailhog container
     cmds:
-      - docker-compose logs -f mailhog
+      - docker compose logs -f mailhog
 
   restart:
-    desc: Restart n8n and mailhog containers
+    desc: Restart all containers
     cmds:
       - task: down
       - task: up
@@ -96,7 +91,7 @@ tasks:
     desc: Remove containers and volumes
     cmds:
       - echo "Removing containers and volumes..."
-      - docker-compose down -v
+      - docker compose down -v
 
   help:
     desc: Display available tasks

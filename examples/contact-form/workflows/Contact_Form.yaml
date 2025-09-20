@@ -19,7 +19,7 @@ connections:
       - - index: 0
           node: Sample Data
           type: main
-id: WcyEH9fzyRLD8zzv
+id: h3hbsEsAljnAmr0G
 name: Contact Form
 nodes:
   - id: 7141f146-c1d4-4310-8f47-6026dd6f1b33
@@ -27,7 +27,7 @@ nodes:
     parameters:
       httpMethod: POST
       options:
-        allowedOrigins: https://example.com
+        allowedOrigins: '*'
         ignoreBots: false
       path: contact-form-submission
       responseMode: responseNode
@@ -46,15 +46,18 @@ nodes:
       emailFormat: text
       fromEmail: info@example.com
       options: {}
-      subject: =New Contact Request from {{ $json.body.name }}
+      subject: =New Contact Request from {{ $node["Webhook"].json.body.name }}
       text: |-
         =New Contact Form Submission
 
-        Original Details:
-        -----------------
-        Name: {{ $node["Sample Data"].json.body.name }}
-        Email: {{ $node["Sample Data"].json.body.email }}
-        Message: {{ $node["Sample Data"].json.body.message }}
+        Details:
+        ---------
+        Name: {{ $node["Webhook"].json.body.name }}
+        Email: {{ $node["Webhook"].json.body.email }}
+        Message: {{ $node["Webhook"].json.body.message }}
+
+        ---
+        This message was sent from your website contact form.
       toEmail: info@example.com
     position:
       - -1380

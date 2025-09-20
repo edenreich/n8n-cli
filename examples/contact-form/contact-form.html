@@ -121,15 +121,13 @@
 
           // Create payload
           const payload = {
-            body: {
-              name: name,
-              email: email,
-              message: message,
-            },
+            name: name,
+            email: email,
+            message: message,
           };
 
           // Replace with your actual n8n webhook URL
-          const webhookUrl = 'YOUR_N8N_WEBHOOK_URL_HERE';
+          const webhookUrl = 'http://localhost:5678/webhook-test/contact-form-submission';
 
           // Send data to n8n
           fetch(webhookUrl, {

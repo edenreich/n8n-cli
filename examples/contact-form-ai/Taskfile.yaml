@@ -7,12 +7,6 @@ vars:
   WORKFLOW_DIR: workflows
 
 tasks:
-  install-cli:
-    desc: Install n8n CLI
-    cmds:
-      - echo "Installing n8n CLI..."
-      - curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh
-
   sync:
     desc: Sync AI workflows to n8n instance
     cmds:
@@ -43,11 +37,11 @@ tasks:
       - echo "Listing workflows from n8n instance..."
       - n8n workflows list
 
-  preview:
-    desc: Start a local web server to preview the HTML form
+  executions:
+    desc: View workflow execution history
     cmds:
-      - echo "Starting web server on http://localhost:8000..."
-      - python3 -m http.server 8000 || python -m SimpleHTTPServer 8000
+      - echo "Fetching workflow execution history..."
+      - n8n workflows executions
 
   setup-env:
     desc: Create a template .env file (won't overwrite existing)
@@ -61,6 +55,43 @@ tasks:
         else
           echo ".env file already exists. Not overwriting."
         fi
+
+  up:
+    desc: Start n8n, mailhog, and nginx with docker-compose
+    cmds:
+      - echo "Starting n8n, mailhog, and nginx..."
+      - docker-compose up -d
+      - echo "n8n is available at http://localhost:5678"
+      - echo "Mailhog is available at http://localhost:8025"
+      - echo "AI Contact form is available at http://localhost:8080"
+
+  down:
+    desc: Stop all containers
+    cmds:
+      - echo "Stopping containers..."
+      - docker-compose down
+
+  logs:
+    desc: Show logs from n8n container
+    cmds:
+      - docker-compose logs -f n8n
+
+  logs-mail:
+    desc: Show logs from mailhog container
+    cmds:
+      - docker-compose logs -f mailhog
+
+  restart:
+    desc: Restart all containers
+    cmds:
+      - task: down
+      - task: up
+
+  clean:
+    desc: Remove containers and volumes
+    cmds:
+      - echo "Removing containers and volumes..."
+      - docker-compose down -v
 
   help:
     desc: Display available tasks

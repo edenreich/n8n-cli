@@ -60,7 +60,7 @@ A complete example demonstrating how to build, deploy, and manage a contact form
 |-----------|-------------|
 | **Contact Form Workflow** | Pre-built n8n workflow that receives webhook data and sends formatted emails |
 | **HTML Contact Form** | Ready-to-use responsive contact form with client-side validation |
-| **Docker Compose Setup** | Local development environment with n8n and Mailhog for email testing |
+| **Docker Compose Setup** | Local development environment with n8n, Mailhog, and Nginx |
 | **GitHub Actions** | Automated CI/CD pipeline for workflow deployment |
 | **Taskfile** | Convenient commands for common development tasks |
 
@@ -111,11 +111,17 @@ Perfect for local development and testing. Includes:
 |---------|---------|------------|
 | n8n | Workflow automation platform | http://localhost:5678 |
 | Mailhog | Email testing (catches all emails) | http://localhost:8025 |
+| Nginx | Contact form web server | http://localhost:8080 |
 
 ```bash
 # Start the development environment
 task up
-# Or without Task: docker-compose up -d
+# Or without Task: docker compose up -d --build
+
+# Services will be available at:
+# - n8n: http://localhost:5678
+# - Mailhog: http://localhost:8025
+# - Contact form: http://localhost:8080
 
 # View service logs
 task logs        # n8n logs
@@ -131,12 +137,14 @@ You can use the n8n-cli in Docker with two different approaches:
 
 1. **Standard CLI (Downloaded)**: Use the `cli` service which downloads and installs the latest release:
    ```bash
-   docker-compose run --rm cli n8n workflows list
+   docker compose run --rm cli
+   n8n workflows list
    ```
 
-2. **Local CLI (Built from Source)**: Use the `cli-local` service which builds the CLI from the source code in the parent repository:
+2. **Local CLI (Built from Source)**: Use the `cli-dev` service which builds the CLI from the source code in the parent repository:
    ```bash
-   docker-compose run --rm cli-local n8n workflows list
+   docker compose run --rm cli-dev
+   n8n workflows list
    ```
    This is useful when developing or testing changes to the CLI itself.
 
@@ -226,9 +234,8 @@ GitHub Actions will automatically:
 # Update the webhook URL in the HTML form
 sed -i 's|YOUR_N8N_WEBHOOK_URL_HERE|your-actual-webhook-url|g' contact-form.html
 
-# Test locally
-task preview
-# Opens form at http://localhost:8000
+# Test locally - form is available via nginx
+# Opens form at http://localhost:8080
 ```
 
 #### Form Hosting Options
@@ -338,9 +345,7 @@ task help        # Show all available commands
 
 | Command | Description |
 |---------|-------------|
-| `task preview` | Local form preview server |
 | `task setup-env` | Create .env template |
-| `task install` | Install n8n-cli binary |
 
 ## 📧 Email Configuration
 
@@ -452,10 +457,10 @@ The workflow includes:
 
 ```bash
 # Check if services are running
-docker-compose ps
+docker compose ps
 
 # View detailed logs
-docker-compose logs -f n8n
+docker compose logs -f n8n
 
 # Test n8n API connection
 curl -H "X-N8N-API-KEY: $N8N_API_KEY" \

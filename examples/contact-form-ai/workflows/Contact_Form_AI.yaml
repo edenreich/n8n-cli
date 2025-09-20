@@ -42,9 +42,9 @@ nodes:
     parameters:
       httpMethod: POST
       options:
-        allowedOrigins: https://example.com
+        allowedOrigins: "*"
         ignoreBots: false
-      path: ai-contact-form-submission
+      path: contact-form-ai-submission
       responseMode: responseNode
     position:
       - -2020

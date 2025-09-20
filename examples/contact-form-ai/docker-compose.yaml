@@ -2,12 +2,12 @@
 services:
   nginx:
     image: nginx:alpine
-    container_name: contact-form-nginx
+    container_name: contact-form-ai-nginx
     restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
-      - ./contact-form.html:/usr/share/nginx/html/index.html:ro
+      - ./contact-form-ai.html:/usr/share/nginx/html/index.html:ro
     depends_on:
       - n8n
 
@@ -29,7 +29,7 @@ services:
 
   n8n:
     image: n8nio/n8n:latest
-    container_name: contact-form-n8n
+    container_name: contact-form-ai-n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -58,7 +58,7 @@ services:
 
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: contact-form-mailhog
+    container_name: contact-form-ai-mailhog
     restart: unless-stopped
     ports:
       - "8025:8025"
