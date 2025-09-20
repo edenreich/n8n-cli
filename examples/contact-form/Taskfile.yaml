@@ -37,6 +37,12 @@ tasks:
       - echo "Listing workflows from n8n instance..."
       - n8n workflows list
 
+  executions:
+    desc: View workflow execution history
+    cmds:
+      - echo "Fetching workflow execution history..."
+      - n8n workflows executions
+
   preview:
     desc: Start a local web server to preview the HTML form
     cmds:

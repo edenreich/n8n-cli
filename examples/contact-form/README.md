@@ -332,6 +332,7 @@ task help        # Show all available commands
 | `task sync-dry-run` | Preview deployment | Before actual sync |
 | `task refresh` | Pull from n8n | Get latest version |
 | `task list` | List all workflows | Check deployment status |
+| `task executions` | View execution history | Debug past workflow runs |
 
 ### Development Tools
 
