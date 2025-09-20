@@ -307,6 +307,7 @@ type WorkflowSettings struct {
 	SaveDataSuccessExecution *WorkflowSettingsSaveDataSuccessExecution `json:"saveDataSuccessExecution,omitempty"`
 	SaveExecutionProgress    *bool                                     `json:"saveExecutionProgress,omitempty"`
 	SaveManualExecutions     *bool                                     `json:"saveManualExecutions,omitempty"`
+	TimeSavedPerExecution    *float32                                  `json:"timeSavedPerExecution,omitempty"`
 	Timezone                 *string                                   `json:"timezone,omitempty"`
 }
 
