@@ -1,170 +1,428 @@
 # Contact Form Example with n8n-cli
 
-This example demonstrates how to set up a contact form workflow in n8n and synchronize it using the n8n-cli and GitHub Actions.
+A complete example demonstrating how to build, deploy, and manage a contact form workflow using n8n-cli with automated GitHub Actions deployment.
 
-## Overview
+## 🎯 What You'll Learn
 
-This example includes:
+- Setting up a webhook-triggered n8n workflow for form processing
+- Configuring email notifications with form submission data
+- Using n8n-cli for local development and workflow synchronization
+- Implementing CI/CD with GitHub Actions for automatic deployments
+- Testing email workflows locally with Mailhog
 
-1. **Contact form workflow** - An n8n workflow that receives form submissions via webhook and sends email notifications
-2. **HTML contact form** - A simple HTML contact form that submits data to the n8n webhook
-3. **GitHub Actions workflow** - Automates the synchronization of workflows to your n8n instance
+## 📦 What's Included
 
-## Directory Structure
+| Component | Description |
+|-----------|-------------|
+| **Contact Form Workflow** | Pre-built n8n workflow that receives webhook data and sends formatted emails |
+| **HTML Contact Form** | Ready-to-use responsive contact form with client-side validation |
+| **Docker Compose Setup** | Local development environment with n8n and Mailhog for email testing |
+| **GitHub Actions** | Automated CI/CD pipeline for workflow deployment |
+| **Taskfile** | Convenient commands for common development tasks |
+
+## 📁 Project Structure
 
 ```
 ├── .github/
 │   └── workflows/
-│       └── sync-n8n.yml     # GitHub Actions workflow for syncing changes automatically to n8n
+│       └── sync-n8n.yml     # CI/CD pipeline for automatic n8n deployment
 ├── workflows/
-│   └── Contact_Form.yaml    # n8n workflow definition
-├── .env.example             # Example environment configuration
-├── .gitignore               # Git ignore file
-├── contact-form.html        # Sample HTML contact form
-├── Taskfile.yaml            # Task definitions for common operations
-└── README.md                # This documentation
+│   └── Contact_Form.yaml    # n8n workflow definition (webhook → email)
+├── docker-compose.yaml      # Local development environment setup
+├── .env.example             # Environment variable template
+├── .gitignore               # Version control exclusions
+├── contact-form.html        # Frontend contact form with validation
+├── Taskfile.yaml            # Development automation commands
+└── README.md                # Project documentation
 ```
 
-## Setup Instructions
+## 🚀 Quick Start
 
-### 1. Set Up Your n8n Instance
+### Prerequisites
 
-If you don't already have an n8n instance, you can:
+- [Docker](https://www.docker.com/get-started) and Docker Compose
+- [n8n-cli](https://github.com/edenreich/n8n-cli#installation) installed
+- [Task](https://taskfile.dev/installation/) (optional, for using Taskfile commands)
+- Git for version control
 
-- Use the [n8n cloud](https://www.n8n.cloud/)
-- Self-host using [Docker](https://docs.n8n.io/hosting/installation/docker/)
-- Install [locally](https://docs.n8n.io/hosting/installation/npm/)
-
-### 2. Obtain n8n API Key
-
-1. Log in to your n8n instance
-2. Go to Settings > API
-3. Create a new API key with appropriate permissions
-
-### 3. Configure GitHub Repository Secrets
-
-If you're using GitHub Actions for automation, add these secrets to your repository:
-
-1. Go to your GitHub repository > Settings > Secrets and variables > Actions
-2. Add these secrets:
-   - `N8N_API_KEY`: Your n8n API key
-   - `N8N_INSTANCE_URL`: URL of your n8n instance (e.g., `https://your-instance.n8n.cloud`)
-
-### 4. Sync Workflow to n8n
-
-#### Option 1: Manual Sync
-
-Use the n8n-cli to sync workflows manually:
+### Step 1: Clone and Setup
 
 ```bash
-# Option A: Using Taskfile (recommended)
-# First make sure you've created a .env file with your credentials
-task setup-env
-# Edit the .env file with your actual credentials
-nano .env
-# Then run the sync task
+# Clone this example
+git clone <your-repo-url>
+cd contact-form
+
+# Create environment configuration
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+### Step 2: Choose Your n8n Setup
+
+#### Option A: Local Development with Docker (Recommended)
+
+Perfect for local development and testing. Includes:
+
+| Service | Purpose | Access URL |
+|---------|---------|------------|
+| n8n | Workflow automation platform | http://localhost:5678 |
+| Mailhog | Email testing (catches all emails) | http://localhost:8025 |
+
+```bash
+# Start the development environment
+task up
+# Or without Task: docker-compose up -d
+
+# View service logs
+task logs        # n8n logs
+task logs-mail   # Mailhog logs
+
+# Stop everything
+task down
+```
+
+**First-time setup:**
+1. Access n8n at http://localhost:5678
+2. Create your admin account
+3. Navigate to Settings → API → Create API Key
+4. Save the API key in your `.env` file
+
+#### Option B: Use Existing n8n Instance
+
+Connect to your existing n8n instance:
+
+| Platform | Setup Guide |
+|----------|-------------|
+| n8n Cloud | [Sign up for free](https://www.n8n.cloud/) → Get API key from Settings |
+| Self-hosted | Use your instance URL and [generate API key](https://docs.n8n.io/api/authentication/) |
+| Local npm | Run `npx n8n` and access at http://localhost:5678 |
+
+### Step 3: Configure Environment
+
+#### Local Development
+
+Edit your `.env` file:
+
+```bash
+N8N_API_KEY=your_api_key_here
+N8N_INSTANCE_URL=http://localhost:5678  # or your cloud instance
+```
+
+#### GitHub Actions (For Automated Deployment)
+
+1. Go to: **Repository Settings → Secrets and variables → Actions**
+2. Add these repository secrets:
+
+| Secret Name | Value Example |
+|-------------|---------------|
+| `N8N_API_KEY` | `n8n_api_abc123...` |
+| `N8N_INSTANCE_URL` | `https://your-instance.n8n.cloud` |
+
+### Step 4: Deploy the Workflow
+
+#### Method 1: Manual Deployment (Development)
+
+```bash
+# Using Taskfile (recommended)
 task sync
 
-# Option B: Direct CLI usage
-# Set environment variables
-export N8N_API_KEY=your_n8n_api_key
-export N8N_INSTANCE_URL=https://your-instance.n8n.cloud
-# Sync workflows
+# Or using n8n-cli directly
 n8n workflows sync --directory workflows/
+
+# Preview changes without applying
+task sync-dry-run
 ```
 
-#### Option 2: Automatic Sync with GitHub Actions
+#### Method 2: Automated Deployment (Production)
 
-Push changes to your repository and the GitHub Actions workflow will automatically sync your workflows to n8n.
-
-### 5. Configure the Contact Form
-
-After syncing, you need to:
-
-1. Get the webhook URL from your n8n workflow:
-
-   - Open the Contact Form workflow in n8n
-   - Click on the Webhook node
-   - Copy the webhook URL
-
-2. Update the HTML form:
-   - Open `contact-form.html`
-   - Replace `YOUR_N8N_WEBHOOK_URL_HERE` with your actual webhook URL
-   - Host the HTML form on your website
-
-## Testing the Contact Form
-
-1. Open the HTML form in a web browser
-2. Fill out the form and submit
-3. Check the configured email address for the notification
-4. You should receive an email with the form submission details
-
-## Customizing the Workflow
-
-You can customize the workflow by:
-
-1. Editing the `Contact_Form.yaml` file
-2. Using Taskfile to sync changes: `task sync`  
-   (or running `n8n workflows sync --directory workflows/` directly)
-3. Or pushing changes to GitHub to trigger the automatic sync
-
-## Using Taskfile
-
-This example uses [Taskfile](https://taskfile.dev/) for common operations. Available tasks:
+Simply push to your repository:
 
 ```bash
-# List all available tasks
-task help
-
-# Sync workflows to n8n
-task sync
-
-# Preview sync without making changes
-task sync-dry-run
-
-# Refresh local workflows from n8n instance
-task refresh
-
-# List workflows from n8n instance
-task list
-
-# Start a local web server to preview the HTML form
-task preview
-
-# Create a template .env file
-task setup-env
+git checkout -b chore/update-contact-form
+# Make changes to workflows/Contact_Form.yaml if needed
+git add .
+git commit -m "chore: Update contact form workflow"
+git push
+gh pr create --title "chore: Update Contact Form Workflow"
+# Someone reviews the PR and merges it
+# After merging, GitHub Actions triggers deployment on workflow dispatch
 ```
 
-## Notes on Email Configuration
+GitHub Actions will automatically:
+1. Validate the workflow syntax
+2. Deploy to your n8n instance
+3. Activate the workflow, if activate is enabled
 
-The example workflow uses n8n's Email node. To properly configure email sending:
+### Step 5: Configure the Contact Form
 
-1. In your n8n instance, go to Settings > Credentials
-2. Add SMTP credentials for sending emails
-3. Update the Email node in your workflow to use these credentials
+#### Get Your Webhook URL
 
-## Security Considerations
+1. Open n8n dashboard → **Workflows** → **Contact Form**
+2. Click the **Webhook** node
+3. Copy the production URL (looks like: `https://your-instance.n8n.cloud/webhook/abc-123`)
 
-1. Always use HTTPS for your webhook
-2. Consider adding a secret query parameter to your webhook URL
-3. Implement CORS restrictions (the example allows only `https://example.com`)
-4. Filter and validate all form inputs
-5. Keep your n8n API key secure
+#### Update and Deploy the Form
 
-## Troubleshooting
+```bash
+# Update the webhook URL in the HTML form
+sed -i 's|YOUR_N8N_WEBHOOK_URL_HERE|your-actual-webhook-url|g' contact-form.html
 
-If you encounter issues:
+# Test locally
+task preview
+# Opens form at http://localhost:8000
+```
 
-1. Check webhook configuration in n8n
-2. Verify CORS settings if submitting from a different domain
-3. Check your email configurations in n8n
-4. Examine the n8n logs for any errors
-5. Test webhook using a tool like Postman
+#### Form Hosting Options
 
-## Learn More
+- **Static hosting**: GitHub Pages, Netlify, Vercel
+- **WordPress**: Embed as custom HTML block
+- **Existing website**: Copy HTML into your site
 
-For more information, refer to:
+## ✅ Testing Your Setup
 
-- [n8n-cli Documentation](https://github.com/edenreich/n8n-cli)
-- [n8n Documentation](https://docs.n8n.io/)
-- [Webhook Node Documentation](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
+### Local Testing with Mailhog
+
+1. Submit a test form at http://localhost:8000
+2. Check Mailhog at http://localhost:8025
+3. Verify email formatting and data
+
+### Production Testing
+
+1. Submit form from your deployed URL
+2. Check workflow execution in n8n dashboard
+3. Verify email delivery to configured address
+
+### Debugging Tips
+
+```bash
+# Check workflow logs
+task logs
+
+# Test webhook directly
+curl -X POST your-webhook-url \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","message":"Hello"}'
+
+# Verify workflow is active
+n8n workflows list --active
+```
+
+## 🎨 Customization Guide
+
+### Workflow Modifications
+
+| What to Change | Where to Edit | Example |
+|----------------|---------------|----------|
+| Email template | `workflows/Contact_Form.yaml` → Email node | Add custom HTML template |
+| Form fields | `contact-form.html` + Webhook node | Add phone number field |
+| Notifications | Add nodes in n8n | Send to Slack, Discord, etc. |
+| Data storage | Add Database node | Store in PostgreSQL, MongoDB |
+
+### Common Customizations
+
+```yaml
+# Add spam protection (in Contact_Form.yaml)
+- Add IF node to check for spam keywords
+- Integrate with reCAPTCHA
+
+# Multiple recipients
+- Duplicate Email node
+- Set different recipients
+
+# Auto-response
+- Add second Email node
+- Send confirmation to submitter
+```
+
+### Deployment After Changes
+
+```bash
+# Local testing
+task sync-dry-run  # Preview changes
+task sync          # Apply changes
+
+# Production
+git commit -am "Update workflow"
+git push  # Auto-deploys via GitHub Actions
+```
+
+## 🛠️ Development Commands
+
+### Quick Reference
+
+```bash
+task help        # Show all available commands
+```
+
+### Docker Environment
+
+| Command | Description | Use When |
+|---------|-------------|----------|
+| `task up` | Start all services | Beginning development |
+| `task down` | Stop services | Done for the day |
+| `task restart` | Restart services | Services acting up |
+| `task clean` | Remove everything | Fresh start needed |
+| `task logs` | View n8n logs | Debugging workflows |
+| `task logs-mail` | View email logs | Testing email delivery |
+
+### Workflow Management
+
+| Command | Description | Use When |
+|---------|-------------|----------|
+| `task sync` | Deploy workflows | Ready to test changes |
+| `task sync-dry-run` | Preview deployment | Before actual sync |
+| `task refresh` | Pull from n8n | Get latest version |
+| `task list` | List all workflows | Check deployment status |
+
+### Development Tools
+
+| Command | Description |
+|---------|-------------|
+| `task preview` | Local form preview server |
+| `task setup-env` | Create .env template |
+| `task install` | Install n8n-cli binary |
+
+## 📧 Email Configuration
+
+### Local Development (Mailhog)
+
+No configuration needed! Mailhog automatically catches all emails:
+- SMTP Server: `mailhog`
+- Port: `1025`
+- No authentication required
+- View emails at: http://localhost:8025
+
+### Production Email Setup
+
+#### Gmail
+```yaml
+SMTP Host: smtp.gmail.com
+Port: 587
+User: your-email@gmail.com
+Password: App-specific password (not regular password)
+SSL/TLS: STARTTLS
+```
+
+#### SendGrid
+```yaml
+SMTP Host: smtp.sendgrid.net
+Port: 587
+User: apikey
+Password: Your SendGrid API key
+```
+
+#### Other Providers
+- **Mailgun**: smtp.mailgun.org:587
+- **Amazon SES**: email-smtp.[region].amazonaws.com:587
+- **Postmark**: smtp.postmarkapp.com:587
+
+### Setting Credentials in n8n
+
+1. Go to **Credentials** → **New** → **Email (SMTP)**
+2. Enter your SMTP settings
+3. Test connection
+4. Update workflow to use new credentials
+
+## 🔒 Security Best Practices
+
+### Webhook Security
+
+✅ **DO:**
+- Use HTTPS webhooks only
+- Add authentication token: `webhook-url?token=secret123`
+- Implement rate limiting in n8n
+- Validate required fields
+
+❌ **DON'T:**
+- Expose webhook URLs in public repos
+- Accept sensitive data without encryption
+- Skip input validation
+
+### CORS Configuration
+
+The workflow includes CORS headers:
+```javascript
+// Currently allows: https://example.com
+// Update in webhook node settings:
+"Access-Control-Allow-Origin": "https://your-domain.com"
+```
+
+### API Key Management
+
+```bash
+# Never commit .env files
+echo ".env" >> .gitignore
+
+# Use GitHub secrets for CI/CD
+# Rotate API keys regularly
+# Use read-only keys when possible
+```
+
+### Input Validation
+
+The workflow includes:
+- Email format validation
+- Required field checks
+- HTML sanitization
+- Length limits
+
+## 🐛 Troubleshooting
+
+### Common Issues and Solutions
+
+| Problem | Solution |
+|---------|----------|
+| **Webhook returns 404** | Ensure workflow is active in n8n |
+| **No email received** | Check Mailhog (local) or SMTP credentials (production) |
+| **CORS error** | Update allowed origins in webhook node |
+| **Form submission fails** | Check browser console for errors |
+| **Workflow not syncing** | Verify API key and instance URL |
+| **Docker won't start** | Check ports 5678, 8025, 1025 are available |
+
+### Debug Commands
+
+```bash
+# Check if services are running
+docker-compose ps
+
+# View detailed logs
+docker-compose logs -f n8n
+
+# Test n8n API connection
+curl -H "X-N8N-API-KEY: $N8N_API_KEY" \
+  $N8N_INSTANCE_URL/api/v1/workflows
+
+# Check webhook directly
+curl -X POST your-webhook-url \
+  -H "Content-Type: application/json" \
+  -d '{"test": true}'
+```
+
+### Getting Help
+
+1. Check n8n execution logs for detailed error messages
+2. Enable debug mode: `DEBUG=true task up`
+3. Join [n8n Community Forum](https://community.n8n.io/)
+4. Report issues on [GitHub](https://github.com/edenreich/n8n-cli/issues)
+
+## 📚 Resources
+
+### Documentation
+- [n8n-cli Complete Guide](https://github.com/edenreich/n8n-cli)
+- [n8n Official Docs](https://docs.n8n.io/)
+- [Webhook Node Reference](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/)
+- [Email Node Reference](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.emailsend/)
+
+### Tutorials
+- [Building Forms with n8n](https://docs.n8n.io/courses/level-one/chapter-5/)
+- [Email Automation](https://n8n.io/blog/email-automation/)
+- [Webhook Security](https://docs.n8n.io/hosting/security/)
+
+### Community
+- [n8n Community Forum](https://community.n8n.io/)
+- [Discord Server](https://discord.gg/n8n)
+- [GitHub Discussions](https://github.com/n8n-io/n8n/discussions)
+
+## 📄 License
+
+This example is provided under the MIT License. Feel free to use and modify for your projects!

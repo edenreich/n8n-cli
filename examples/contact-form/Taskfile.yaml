@@ -56,6 +56,42 @@ tasks:
           echo ".env file already exists. Not overwriting."
         fi
 
+  up:
+    desc: Start n8n and mailhog with docker-compose
+    cmds:
+      - echo "Starting n8n and mailhog..."
+      - docker-compose up -d
+      - echo "n8n is available at http://localhost:5678"
+      - echo "Mailhog is available at http://localhost:8025"
+
+  down:
+    desc: Stop n8n and mailhog containers
+    cmds:
+      - echo "Stopping containers..."
+      - docker-compose down
+
+  logs:
+    desc: Show logs from n8n container
+    cmds:
+      - docker-compose logs -f n8n
+
+  logs-mail:
+    desc: Show logs from mailhog container
+    cmds:
+      - docker-compose logs -f mailhog
+
+  restart:
+    desc: Restart n8n and mailhog containers
+    cmds:
+      - task: down
+      - task: up
+
+  clean:
+    desc: Remove containers and volumes
+    cmds:
+      - echo "Removing containers and volumes..."
+      - docker-compose down -v
+
   help:
     desc: Display available tasks
     silent: true

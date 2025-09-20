@@ -3,6 +3,10 @@
   "manifest": {
     "version": 1,
     "install": {
+      "act": {
+        "pkg-path": "act",
+        "version": "^0.2.81"
+      },
       "claude-code": {
         "pkg-path": "claude-code",
         "version": "^1.0.117"
@@ -19,6 +23,122 @@
     "options": {}
   },
   "packages": [
+    {
+      "attr_path": "act",
+      "broken": false,
+      "derivation": "/nix/store/8xwqn1bz2xr71hzpviqs6ph198h6xx36-act-0.2.81.drv",
+      "description": "Run your GitHub Actions locally",
+      "install_id": "act",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "name": "act-0.2.81",
+      "pname": "act",
+      "rev": "0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "rev_count": 863594,
+      "rev_date": "2025-09-18T12:31:41Z",
+      "scrape_date": "2025-09-20T05:40:22.827146Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.2.81",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/f1qcsnyyni43h2hx96g1faqxbcwy4iwn-act-0.2.81"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "act",
+      "broken": false,
+      "derivation": "/nix/store/164s1cvsm3ad7b53h0kh2cjnfrlkz69p-act-0.2.81.drv",
+      "description": "Run your GitHub Actions locally",
+      "install_id": "act",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "name": "act-0.2.81",
+      "pname": "act",
+      "rev": "0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "rev_count": 863594,
+      "rev_date": "2025-09-18T12:31:41Z",
+      "scrape_date": "2025-09-20T06:13:13.778972Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.2.81",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/vb15vi4karvsg5yl3xcgqbs5w28ig748-act-0.2.81"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "act",
+      "broken": false,
+      "derivation": "/nix/store/dzqmw2i6ayccvpcrv5rhbais1kcm4w40-act-0.2.81.drv",
+      "description": "Run your GitHub Actions locally",
+      "install_id": "act",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "name": "act-0.2.81",
+      "pname": "act",
+      "rev": "0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "rev_count": 863594,
+      "rev_date": "2025-09-18T12:31:41Z",
+      "scrape_date": "2025-09-20T06:42:26.747032Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.2.81",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/blas4k7n7cnv8iqfqfs3a6r11dr98717-act-0.2.81"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "act",
+      "broken": false,
+      "derivation": "/nix/store/wl04qhmpxzsm92nlis980hqhdjsw7xjc-act-0.2.81.drv",
+      "description": "Run your GitHub Actions locally",
+      "install_id": "act",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "name": "act-0.2.81",
+      "pname": "act",
+      "rev": "0147c2f1d54b30b5dd6d4a8c8542e8d7edf93b5d",
+      "rev_count": 863594,
+      "rev_date": "2025-09-18T12:31:41Z",
+      "scrape_date": "2025-09-20T07:15:33.752521Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.2.81",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/mj23jlma742pf9hmnbwnmxxfy8q5g7hk-act-0.2.81"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
     {
       "attr_path": "claude-code",
       "broken": false,
