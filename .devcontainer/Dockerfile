@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/go:1-1.24-bookworm
+FROM mcr.microsoft.com/devcontainers/go:2-1.25-bookworm
 
 ENV GOPATH=/home/vscode/go \
     PATH="/home/vscode/go/bin:${PATH}"
@@ -6,14 +6,14 @@ ENV GOPATH=/home/vscode/go \
 RUN mkdir -p /home/vscode/go && chown -R vscode:golang /home/vscode/go
 
 # Tool Versions
-ENV TASK_VERSION=v3.43.3 \
-    GOLANG_CI_LINT_VERSION=v2.1.5 \
-    GOLANG_COBRA_CLI_VERSION=v1.3.0 \
-    GITHUB_CLI_VERSION=2.72.0 \
-    SEMANTIC_RELEASE_VERSION=v24.2.3
+ENV TASK_VERSION=v3.45.4 \
+    GOLANG_CI_LINT_VERSION=v2.4.0 \
+    GOLANG_COBRA_CLI_VERSION=v1.10.1 \
+    GITHUB_CLI_VERSION=2.79.0 \
+    SEMANTIC_RELEASE_VERSION=v24.2.9
 
 # Install common
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
 RUN apt-get update && apt-get install -y apt-transport-https ca-certificates curl gnupg nodejs
 
 # Install task
@@ -27,10 +27,10 @@ RUN npm install -g \
     semantic-release@${SEMANTIC_RELEASE_VERSION} \
     @semantic-release/changelog@6.0.3 \
     @semantic-release/git@10.0.1 \
-    @semantic-release/github@11.0.2 \
+    @semantic-release/github@11.0.6 \
     @semantic-release/commit-analyzer@13.0.1 \
-    @semantic-release/release-notes-generator@14.0.3 \
-    conventional-changelog-conventionalcommits@8.0.0
+    @semantic-release/release-notes-generator@14.1.0 \
+    conventional-changelog-conventionalcommits@9.1.0
 
 # Install spectral
 RUN npm install -g @stoplight/spectral-cli

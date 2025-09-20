@@ -20,7 +20,7 @@ Thank you for considering contributing to n8n-cli! This document provides guidel
 
 ### Prerequisites
 
-- Go 1.24 or higher
+- Go 1.25 or higher
 - [Task](https://taskfile.dev/) - Task runner for development automation
 - [Cobra CLI](https://github.com/spf13/cobra-cli) - For generating new commands
 - Git

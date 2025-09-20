@@ -1,6 +1,6 @@
 module github.com/edenreich/n8n-cli
 
-go 1.24.2
+go 1.25
 
 require (
 	github.com/oapi-codegen/runtime v1.1.1

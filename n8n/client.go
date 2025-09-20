@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -338,6 +340,116 @@ func (c *Client) DeleteWorkflow(id string) error {
 	return nil
 }
 
+// GetExecutions fetches workflow executions from the n8n API
+// workflowID is optional - if provided, only executions for that workflow will be returned
+// includeData is optional - if provided as true, execution data will be included in the response
+// status is optional - if provided, only executions with that status will be returned (error, success, waiting)
+// limit is optional - if provided, limits the number of executions returned
+// cursor is optional - if provided, retrieves the next page of results
+func (c *Client) GetExecutions(workflowID string, includeData bool, status string, limit int, cursor string) (*ExecutionList, error) {
+	baseURL := fmt.Sprintf("%s/executions", c.baseURL)
+
+	params := url.Values{}
+	if workflowID != "" {
+		params.Add("workflowId", workflowID)
+	}
+	if includeData {
+		params.Add("includeData", "true")
+	}
+	if status != "" {
+		params.Add("status", status)
+	}
+	if limit > 0 {
+		params.Add("limit", strconv.Itoa(limit))
+	}
+	if cursor != "" {
+		params.Add("cursor", cursor)
+	}
+
+	requestURL := baseURL
+	if len(params) > 0 {
+		requestURL = fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	}
+
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.Warnf("Error closing response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var flexibleResult ExecutionListWithFlexibleIDs
+	if err := json.NewDecoder(resp.Body).Decode(&flexibleResult); err != nil {
+		return nil, fmt.Errorf("failed to decode execution list: %v", err)
+	}
+
+	result := flexibleResult.ToExecutionList()
+	return result, nil
+}
+
+// GetExecutionById fetches a specific execution by its ID
+// includeData is optional - if provided as true, execution data will be included in the response
+func (c *Client) GetExecutionById(executionID string, includeData bool) (*Execution, error) {
+	baseURL := fmt.Sprintf("%s/executions/%s", c.baseURL, executionID)
+
+	params := url.Values{}
+	if includeData {
+		params.Add("includeData", "true")
+	}
+
+	requestURL := baseURL
+	if len(params) > 0 {
+		requestURL = fmt.Sprintf("%s?%s", baseURL, params.Encode())
+	}
+
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-N8N-API-KEY", c.apiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.Warnf("Error closing response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
+	}
+
+	var flexibleResult ExecutionWithFlexibleIDs
+	if err := json.NewDecoder(resp.Body).Decode(&flexibleResult); err != nil {
+		return nil, fmt.Errorf("failed to decode execution: %v", err)
+	}
+
+	result := toExecution(flexibleResult)
+	return &result, nil
+}
+
 // GetWorkflowTags fetches the tags of a workflow by its ID
 func (c *Client) GetWorkflowTags(id string) (WorkflowTags, error) {
 	url := fmt.Sprintf("%s/workflows/%s/tags", c.baseURL, id)
@@ -424,23 +536,15 @@ func (c *Client) UpdateWorkflowTags(id string, tagIds TagIds) (WorkflowTags, err
 func (c *Client) CreateTag(tagName string) (*Tag, error) {
 	url := fmt.Sprintf("%s/tags", c.baseURL)
 
-	tag := Tag{
-		Name: tagName,
-	}
-
-	body, err := json.Marshal(tag)
+	tagRequest := map[string]string{"name": tagName}
+	jsonBody, err := json.Marshal(tagRequest)
 	if err != nil {
-		return nil, fmt.Errorf("error marshaling tag: %w", err)
+		return nil, err
 	}
 
-	c.logDebug("CREATE TAG REQUEST: %s", string(body))
+	c.logDebug("CREATE TAG REQUEST: %s", string(jsonBody))
 
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, body, "", "  "); err == nil {
-		c.logDebug("CREATE TAG FORMATTED JSON:\n%s", prettyJSON.String())
-	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return nil, err
 	}
@@ -452,31 +556,23 @@ func (c *Client) CreateTag(tagName string) (*Tag, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
-	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			c.logger.Warnf("Error closing response body: %v", err)
 		}
 	}()
 
-	resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
-
-	c.logDebug("CREATE TAG RESPONSE (Status: %d): %s", resp.StatusCode, string(respBody))
-
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, respBody)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
 	}
 
-	var createdTag Tag
-	if err := json.NewDecoder(bytes.NewBuffer(respBody)).Decode(&createdTag); err != nil {
+	var tag Tag
+	if err := json.NewDecoder(resp.Body).Decode(&tag); err != nil {
 		return nil, err
 	}
 
-	return &createdTag, nil
+	return &tag, nil
 }
 
 // GetTags fetches all tags from n8n
@@ -506,10 +602,10 @@ func (c *Client) GetTags() (*TagList, error) {
 		return nil, fmt.Errorf("API returned error %d: %s", resp.StatusCode, body)
 	}
 
-	var tags TagList
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	var result TagList
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 
-	return &tags, nil
+	return &result, nil
 }

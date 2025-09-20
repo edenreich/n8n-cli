@@ -1,0 +1,86 @@
+---
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: contact-form-ai-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./contact-form-ai.html:/usr/share/nginx/html/index.html:ro
+    depends_on:
+      - n8n
+
+  cli:
+    image: ubuntu:24.04
+    volumes:
+      - ./:/home/ubuntu/app
+    working_dir: /home/ubuntu/app
+    environment:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
+    env_file:
+      - .env
+    command:
+      - bash
+      - -c
+      - "apt-get update && apt-get install -y curl && curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh && bash"
+    profiles:
+      - manual
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: contact-form-ai-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      NODE_ENV: development
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_DIAGNOSTICS_ENABLED: false
+      N8N_VERSION_NOTIFICATIONS_ENABLED: false
+      N8N_ENCRYPTION_KEY: your-encryption-key-here
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - --spider
+        - http://localhost:5678/healthz
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: contact-form-ai-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MH_HOSTNAME: mailhog
+
+  cli-dev:
+    image: golang:1.25-alpine
+    volumes:
+      - ../..:/go/src/project
+      - ./:/go/src/example
+    working_dir: /go/src/project
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - "go build -o $(go env GOPATH)/bin/n8n . && cd /go/src/example && sh"
+    profiles:
+      - manual
+
+volumes:
+  n8n_data:
+    driver: local
