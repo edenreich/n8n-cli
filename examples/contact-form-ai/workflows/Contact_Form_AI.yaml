@@ -1,0 +1,182 @@
+---
+active: false
+connections:
+  Groq Chat Model:
+    ai_languageModel:
+      - - index: 0
+          node: Summary Agent
+          type: ai_languageModel
+  Sample Data:
+    main:
+      - - index: 0
+          node: Summary Agent
+          type: main
+  Send Email:
+    main:
+      - []
+  Structured Output Parser:
+    ai_outputParser:
+      - - index: 0
+          node: Summary Agent
+          type: ai_outputParser
+  Summary Agent:
+    main:
+      - - index: 0
+          node: Send Email
+          type: main
+  Webhook:
+    main:
+      - - index: 0
+          node: Summary Agent
+          type: main
+  When clicking ‘Test workflow’:
+    main:
+      - - index: 0
+          node: Sample Data
+          type: main
+id: y7dQE8rfF8tUxM7s
+name: Contact Form AI
+nodes:
+  - id: 26476cd4-4435-4887-b419-ea2aaf703fd3
+    name: Webhook
+    parameters:
+      httpMethod: POST
+      options:
+        allowedOrigins: https://example.com
+        ignoreBots: false
+      path: ai-contact-form-submission
+      responseMode: responseNode
+    position:
+      - -2020
+      - -840
+    type: n8n-nodes-base.webhook
+    webhookId: 48b804af-ddb9-45f3-a07e-3345759e6824
+  - credentials:
+      smtp:
+        id: JTfejxagptySQHz0
+        name: Mailgun SMTP
+    id: 2a6620a6-a991-4f8f-be84-c49c4a923fc2
+    name: Send Email
+    parameters:
+      emailFormat: text
+      fromEmail: info@example.com
+      options: {}
+      subject: =New AI-Analyzed Contact from {{ $node["Sample Data"].json.body.name }}
+      text: |-
+        =New Contact Form Submission (AI-Analyzed)
+
+        Original Details:
+        -----------------
+        Name: {{ $node["Sample Data"].json.body.name }}
+        Email: {{ $node["Sample Data"].json.body.email }}
+        Message: {{ $node["Sample Data"].json.body.message }}
+
+        AI Analysis:
+        ------------
+        {{ $json.output.aiSummary }}
+
+        Response Suggestion:
+        ------------------
+        {{ $json.output.responseSuggestion }}
+
+        ---
+        This message was processed by AI and sent from your website contact form.
+      toEmail: info@example.com
+    position:
+      - -1360
+      - -940
+    type: n8n-nodes-base.emailSend
+    webhookId: 4e0ddb20-0bae-4e50-b0d2-d69777d7619d
+  - credentials:
+      groqApi:
+        id: 3iRclTuYupCAu4jX
+        name: Groq account
+    id: 01d47581-fbf6-4dbc-b36c-92cd8fcd0ee4
+    name: Groq Chat Model
+    parameters:
+      model: deepseek-r1-distill-llama-70b
+      options: {}
+    position:
+      - -1800
+      - -720
+    type: '@n8n/n8n-nodes-langchain.lmChatGroq'
+  - id: db663cd0-805c-4608-88e7-20adef11f318
+    name: Sample Data
+    parameters:
+      jsonOutput: |-
+        {
+          "body": {
+            "name": "John Smith",
+            "email": "john.smith@example.com",
+            "message": "I recently purchased your product and I'm having trouble with the installation. The manual says I should be able to connect it directly to my home network, but it's not being recognized. Could you please help me troubleshoot this issue? I've already tried restarting both the device and my router.",
+            "category": "support",
+            "priority": "medium"
+          }
+        }
+      mode: raw
+      options: {}
+    position:
+      - -2020
+      - -1040
+    type: n8n-nodes-base.set
+  - id: 92f077af-e775-4ba7-8cb6-00b162861a7d
+    name: When clicking ‘Test workflow’
+    parameters: {}
+    position:
+      - -2240
+      - -1040
+    type: n8n-nodes-base.manualTrigger
+  - id: 543630e5-76c5-4edb-95ed-ed1358ffa898
+    name: Structured Output Parser
+    parameters:
+      jsonSchemaExample: |-
+        {
+          "aiSummary": "...",
+          "category": "...",
+          "sentiment": "...",
+          "responseSuggestion": "..."
+        }
+    position:
+      - -1560
+      - -720
+    type: '@n8n/n8n-nodes-langchain.outputParserStructured'
+    typeVersion: 1.2
+  - id: 788c36de-40d4-4559-a2bf-91b94f9aaded
+    name: Summary Agent
+    parameters:
+      hasOutputParser: true
+      options:
+        systemMessage: |-
+          =User's information:
+          Name: {{ $json.body.name }}
+          Email: {{ $json.body.email }}
+          Message: {{ $json.body.message }}
+
+          Please provide:
+          1. A concise summary of the customer's message (max 3 sentences)
+          2. A categorization of the message (question, complaint, feedback, request, etc.)
+          3. The general sentiment of the message (positive, neutral, negative)
+          4. A suggested response to the customer
+
+          Format your response as a JSON with these keys:
+          {
+            "aiSummary": "...",
+            "category": "...",
+            "sentiment": "...",
+            "responseSuggestion": "..."
+          }
+      promptType: define
+      text: You are a customer service AI assistant. You're analyzing a contact form submission.
+    position:
+      - -1760
+      - -940
+    type: '@n8n/n8n-nodes-langchain.agent'
+    typeVersion: 1.9
+settings: {}
+tags:
+  - id: YdETOZI9z0WAqwC8
+    name: ai
+  - id: qzoBad5Au6cpAbaq
+    name: contact
+  - id: OFfLoldgq9BFjAe8
+    name: form

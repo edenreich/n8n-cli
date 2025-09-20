@@ -1,12 +1,13 @@
 module github.com/edenreich/n8n-cli
 
-go 1.24.2
+go 1.25
 
 require (
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
+	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

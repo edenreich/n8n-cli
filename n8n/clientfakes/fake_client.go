@@ -21,6 +21,19 @@ type FakeClientInterface struct {
 		result1 *n8n.Workflow
 		result2 error
 	}
+	CreateTagStub        func(string) (*n8n.Tag, error)
+	createTagMutex       sync.RWMutex
+	createTagArgsForCall []struct {
+		arg1 string
+	}
+	createTagReturns struct {
+		result1 *n8n.Tag
+		result2 error
+	}
+	createTagReturnsOnCall map[int]struct {
+		result1 *n8n.Tag
+		result2 error
+	}
 	CreateWorkflowStub        func(*n8n.Workflow) (*n8n.Workflow, error)
 	createWorkflowMutex       sync.RWMutex
 	createWorkflowArgsForCall []struct {
@@ -89,6 +102,44 @@ type FakeClientInterface struct {
 		result1 *n8n.ExecutionList
 		result2 error
 	}
+	GetTagsStub        func() (*n8n.TagList, error)
+	getTagsMutex       sync.RWMutex
+	getTagsArgsForCall []struct {
+	}
+	getTagsReturns struct {
+		result1 *n8n.TagList
+		result2 error
+	}
+	getTagsReturnsOnCall map[int]struct {
+		result1 *n8n.TagList
+		result2 error
+	}
+	GetWorkflowStub        func(string) (*n8n.Workflow, error)
+	getWorkflowMutex       sync.RWMutex
+	getWorkflowArgsForCall []struct {
+		arg1 string
+	}
+	getWorkflowReturns struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	getWorkflowReturnsOnCall map[int]struct {
+		result1 *n8n.Workflow
+		result2 error
+	}
+	GetWorkflowTagsStub        func(string) (n8n.WorkflowTags, error)
+	getWorkflowTagsMutex       sync.RWMutex
+	getWorkflowTagsArgsForCall []struct {
+		arg1 string
+	}
+	getWorkflowTagsReturns struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}
+	getWorkflowTagsReturnsOnCall map[int]struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}
 	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
@@ -113,6 +164,20 @@ type FakeClientInterface struct {
 	}
 	updateWorkflowReturnsOnCall map[int]struct {
 		result1 *n8n.Workflow
+		result2 error
+	}
+	UpdateWorkflowTagsStub        func(string, n8n.TagIds) (n8n.WorkflowTags, error)
+	updateWorkflowTagsMutex       sync.RWMutex
+	updateWorkflowTagsArgsForCall []struct {
+		arg1 string
+		arg2 n8n.TagIds
+	}
+	updateWorkflowTagsReturns struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}
+	updateWorkflowTagsReturnsOnCall map[int]struct {
+		result1 n8n.WorkflowTags
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -179,6 +244,70 @@ func (fake *FakeClientInterface) ActivateWorkflowReturnsOnCall(i int, result1 *n
 	}
 	fake.activateWorkflowReturnsOnCall[i] = struct {
 		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) CreateTag(arg1 string) (*n8n.Tag, error) {
+	fake.createTagMutex.Lock()
+	ret, specificReturn := fake.createTagReturnsOnCall[len(fake.createTagArgsForCall)]
+	fake.createTagArgsForCall = append(fake.createTagArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.CreateTagStub
+	fakeReturns := fake.createTagReturns
+	fake.recordInvocation("CreateTag", []interface{}{arg1})
+	fake.createTagMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) CreateTagCallCount() int {
+	fake.createTagMutex.RLock()
+	defer fake.createTagMutex.RUnlock()
+	return len(fake.createTagArgsForCall)
+}
+
+func (fake *FakeClientInterface) CreateTagCalls(stub func(string) (*n8n.Tag, error)) {
+	fake.createTagMutex.Lock()
+	defer fake.createTagMutex.Unlock()
+	fake.CreateTagStub = stub
+}
+
+func (fake *FakeClientInterface) CreateTagArgsForCall(i int) string {
+	fake.createTagMutex.RLock()
+	defer fake.createTagMutex.RUnlock()
+	argsForCall := fake.createTagArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) CreateTagReturns(result1 *n8n.Tag, result2 error) {
+	fake.createTagMutex.Lock()
+	defer fake.createTagMutex.Unlock()
+	fake.CreateTagStub = nil
+	fake.createTagReturns = struct {
+		result1 *n8n.Tag
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) CreateTagReturnsOnCall(i int, result1 *n8n.Tag, result2 error) {
+	fake.createTagMutex.Lock()
+	defer fake.createTagMutex.Unlock()
+	fake.CreateTagStub = nil
+	if fake.createTagReturnsOnCall == nil {
+		fake.createTagReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Tag
+			result2 error
+		})
+	}
+	fake.createTagReturnsOnCall[i] = struct {
+		result1 *n8n.Tag
 		result2 error
 	}{result1, result2}
 }
@@ -505,6 +634,190 @@ func (fake *FakeClientInterface) GetExecutionsReturnsOnCall(i int, result1 *n8n.
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) GetTags() (*n8n.TagList, error) {
+	fake.getTagsMutex.Lock()
+	ret, specificReturn := fake.getTagsReturnsOnCall[len(fake.getTagsArgsForCall)]
+	fake.getTagsArgsForCall = append(fake.getTagsArgsForCall, struct {
+	}{})
+	stub := fake.GetTagsStub
+	fakeReturns := fake.getTagsReturns
+	fake.recordInvocation("GetTags", []interface{}{})
+	fake.getTagsMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetTagsCallCount() int {
+	fake.getTagsMutex.RLock()
+	defer fake.getTagsMutex.RUnlock()
+	return len(fake.getTagsArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetTagsCalls(stub func() (*n8n.TagList, error)) {
+	fake.getTagsMutex.Lock()
+	defer fake.getTagsMutex.Unlock()
+	fake.GetTagsStub = stub
+}
+
+func (fake *FakeClientInterface) GetTagsReturns(result1 *n8n.TagList, result2 error) {
+	fake.getTagsMutex.Lock()
+	defer fake.getTagsMutex.Unlock()
+	fake.GetTagsStub = nil
+	fake.getTagsReturns = struct {
+		result1 *n8n.TagList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetTagsReturnsOnCall(i int, result1 *n8n.TagList, result2 error) {
+	fake.getTagsMutex.Lock()
+	defer fake.getTagsMutex.Unlock()
+	fake.GetTagsStub = nil
+	if fake.getTagsReturnsOnCall == nil {
+		fake.getTagsReturnsOnCall = make(map[int]struct {
+			result1 *n8n.TagList
+			result2 error
+		})
+	}
+	fake.getTagsReturnsOnCall[i] = struct {
+		result1 *n8n.TagList
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetWorkflow(arg1 string) (*n8n.Workflow, error) {
+	fake.getWorkflowMutex.Lock()
+	ret, specificReturn := fake.getWorkflowReturnsOnCall[len(fake.getWorkflowArgsForCall)]
+	fake.getWorkflowArgsForCall = append(fake.getWorkflowArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetWorkflowStub
+	fakeReturns := fake.getWorkflowReturns
+	fake.recordInvocation("GetWorkflow", []interface{}{arg1})
+	fake.getWorkflowMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetWorkflowCallCount() int {
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
+	return len(fake.getWorkflowArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetWorkflowCalls(stub func(string) (*n8n.Workflow, error)) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = stub
+}
+
+func (fake *FakeClientInterface) GetWorkflowArgsForCall(i int) string {
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
+	argsForCall := fake.getWorkflowArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) GetWorkflowReturns(result1 *n8n.Workflow, result2 error) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = nil
+	fake.getWorkflowReturns = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetWorkflowReturnsOnCall(i int, result1 *n8n.Workflow, result2 error) {
+	fake.getWorkflowMutex.Lock()
+	defer fake.getWorkflowMutex.Unlock()
+	fake.GetWorkflowStub = nil
+	if fake.getWorkflowReturnsOnCall == nil {
+		fake.getWorkflowReturnsOnCall = make(map[int]struct {
+			result1 *n8n.Workflow
+			result2 error
+		})
+	}
+	fake.getWorkflowReturnsOnCall[i] = struct {
+		result1 *n8n.Workflow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetWorkflowTags(arg1 string) (n8n.WorkflowTags, error) {
+	fake.getWorkflowTagsMutex.Lock()
+	ret, specificReturn := fake.getWorkflowTagsReturnsOnCall[len(fake.getWorkflowTagsArgsForCall)]
+	fake.getWorkflowTagsArgsForCall = append(fake.getWorkflowTagsArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetWorkflowTagsStub
+	fakeReturns := fake.getWorkflowTagsReturns
+	fake.recordInvocation("GetWorkflowTags", []interface{}{arg1})
+	fake.getWorkflowTagsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) GetWorkflowTagsCallCount() int {
+	fake.getWorkflowTagsMutex.RLock()
+	defer fake.getWorkflowTagsMutex.RUnlock()
+	return len(fake.getWorkflowTagsArgsForCall)
+}
+
+func (fake *FakeClientInterface) GetWorkflowTagsCalls(stub func(string) (n8n.WorkflowTags, error)) {
+	fake.getWorkflowTagsMutex.Lock()
+	defer fake.getWorkflowTagsMutex.Unlock()
+	fake.GetWorkflowTagsStub = stub
+}
+
+func (fake *FakeClientInterface) GetWorkflowTagsArgsForCall(i int) string {
+	fake.getWorkflowTagsMutex.RLock()
+	defer fake.getWorkflowTagsMutex.RUnlock()
+	argsForCall := fake.getWorkflowTagsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClientInterface) GetWorkflowTagsReturns(result1 n8n.WorkflowTags, result2 error) {
+	fake.getWorkflowTagsMutex.Lock()
+	defer fake.getWorkflowTagsMutex.Unlock()
+	fake.GetWorkflowTagsStub = nil
+	fake.getWorkflowTagsReturns = struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) GetWorkflowTagsReturnsOnCall(i int, result1 n8n.WorkflowTags, result2 error) {
+	fake.getWorkflowTagsMutex.Lock()
+	defer fake.getWorkflowTagsMutex.Unlock()
+	fake.GetWorkflowTagsStub = nil
+	if fake.getWorkflowTagsReturnsOnCall == nil {
+		fake.getWorkflowTagsReturnsOnCall = make(map[int]struct {
+			result1 n8n.WorkflowTags
+			result2 error
+		})
+	}
+	fake.getWorkflowTagsReturnsOnCall[i] = struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
@@ -626,11 +939,78 @@ func (fake *FakeClientInterface) UpdateWorkflowReturnsOnCall(i int, result1 *n8n
 	}{result1, result2}
 }
 
+func (fake *FakeClientInterface) UpdateWorkflowTags(arg1 string, arg2 n8n.TagIds) (n8n.WorkflowTags, error) {
+	fake.updateWorkflowTagsMutex.Lock()
+	ret, specificReturn := fake.updateWorkflowTagsReturnsOnCall[len(fake.updateWorkflowTagsArgsForCall)]
+	fake.updateWorkflowTagsArgsForCall = append(fake.updateWorkflowTagsArgsForCall, struct {
+		arg1 string
+		arg2 n8n.TagIds
+	}{arg1, arg2})
+	stub := fake.UpdateWorkflowTagsStub
+	fakeReturns := fake.updateWorkflowTagsReturns
+	fake.recordInvocation("UpdateWorkflowTags", []interface{}{arg1, arg2})
+	fake.updateWorkflowTagsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowTagsCallCount() int {
+	fake.updateWorkflowTagsMutex.RLock()
+	defer fake.updateWorkflowTagsMutex.RUnlock()
+	return len(fake.updateWorkflowTagsArgsForCall)
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowTagsCalls(stub func(string, n8n.TagIds) (n8n.WorkflowTags, error)) {
+	fake.updateWorkflowTagsMutex.Lock()
+	defer fake.updateWorkflowTagsMutex.Unlock()
+	fake.UpdateWorkflowTagsStub = stub
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowTagsArgsForCall(i int) (string, n8n.TagIds) {
+	fake.updateWorkflowTagsMutex.RLock()
+	defer fake.updateWorkflowTagsMutex.RUnlock()
+	argsForCall := fake.updateWorkflowTagsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowTagsReturns(result1 n8n.WorkflowTags, result2 error) {
+	fake.updateWorkflowTagsMutex.Lock()
+	defer fake.updateWorkflowTagsMutex.Unlock()
+	fake.UpdateWorkflowTagsStub = nil
+	fake.updateWorkflowTagsReturns = struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClientInterface) UpdateWorkflowTagsReturnsOnCall(i int, result1 n8n.WorkflowTags, result2 error) {
+	fake.updateWorkflowTagsMutex.Lock()
+	defer fake.updateWorkflowTagsMutex.Unlock()
+	fake.UpdateWorkflowTagsStub = nil
+	if fake.updateWorkflowTagsReturnsOnCall == nil {
+		fake.updateWorkflowTagsReturnsOnCall = make(map[int]struct {
+			result1 n8n.WorkflowTags
+			result2 error
+		})
+	}
+	fake.updateWorkflowTagsReturnsOnCall[i] = struct {
+		result1 n8n.WorkflowTags
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.activateWorkflowMutex.RLock()
 	defer fake.activateWorkflowMutex.RUnlock()
+	fake.createTagMutex.RLock()
+	defer fake.createTagMutex.RUnlock()
 	fake.createWorkflowMutex.RLock()
 	defer fake.createWorkflowMutex.RUnlock()
 	fake.deactivateWorkflowMutex.RLock()
@@ -641,10 +1021,18 @@ func (fake *FakeClientInterface) Invocations() map[string][][]interface{} {
 	defer fake.getExecutionByIdMutex.RUnlock()
 	fake.getExecutionsMutex.RLock()
 	defer fake.getExecutionsMutex.RUnlock()
+	fake.getTagsMutex.RLock()
+	defer fake.getTagsMutex.RUnlock()
+	fake.getWorkflowMutex.RLock()
+	defer fake.getWorkflowMutex.RUnlock()
+	fake.getWorkflowTagsMutex.RLock()
+	defer fake.getWorkflowTagsMutex.RUnlock()
 	fake.getWorkflowsMutex.RLock()
 	defer fake.getWorkflowsMutex.RUnlock()
 	fake.updateWorkflowMutex.RLock()
 	defer fake.updateWorkflowMutex.RUnlock()
+	fake.updateWorkflowTagsMutex.RLock()
+	defer fake.updateWorkflowTagsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/edenreich/n8n-cli/n8n"
@@ -61,4 +62,16 @@ func SanitizeFilename(name string) string {
 	}
 
 	return name
+}
+
+// DetectWorkflowDrift compares two workflows and returns true if they differ
+// This function uses reflect.DeepEqual for accurate structural comparison
+// If minimal is true, both workflows will be cleaned before comparison
+func DetectWorkflowDrift(actual n8n.Workflow, desired n8n.Workflow, minimal bool) bool {
+	if minimal {
+		actual = n8n.CleanWorkflow(actual)
+		desired = n8n.CleanWorkflow(desired)
+	}
+
+	return !reflect.DeepEqual(actual, desired)
 }

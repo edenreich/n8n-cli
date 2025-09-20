@@ -14,6 +14,17 @@ This document outlines essential features for the n8n-cli tool based on the gene
 - [ ] Implement validate command to apply static analysis on workflow files - should help to identify issues before syncing to n8n instance
 - [ ] List all workflows with filter capabilities (by name, tags, active status)
 
+### Tags Management
+
+- [x] Add/remove tags to workflows
+- [x] Create new tags
+
+## Documentation
+
+- [x] Generate command reference
+- [x] Create examples for common workflows
+- [x] Document best practices for workflow version control
+
 ### Credentials Management
 
 - [ ] List credentials from n8n instance
@@ -32,17 +43,11 @@ This document outlines essential features for the n8n-cli tool based on the gene
 - [ ] Import variables from local files
 - [ ] Set/update variable values
 
-### Tags Management
-
-- [ ] List tags
-- [ ] Add/remove tags to workflows
-- [ ] Create new tags
-
 ### Project Management
 
 - [ ] List projects
 - [ ] Create new projects
-- [ ] Transfer workflows between projects
+- [ ] ~Transfer workflows between projects~
 
 ### Audit & Security
 
@@ -59,15 +64,8 @@ This document outlines essential features for the n8n-cli tool based on the gene
 
 ## Technical Enhancements
 
-- [ ] Add validation for local workflow files
 - [ ] Implement retry logic for API requests
 - [ ] Add support for multiple n8n instances (profiles)
 - [ ] Create workspace configuration for team collaboration
-- [ ] Add support for environment-specific variables
+- [x] Add support for environment-specific variables
 - [x] Add check-dirty feature to CI pipeline to detect uncommitted generated files
-
-## Documentation
-
-- [ ] Generate command reference
-- [ ] Create examples for common workflows
-- [ ] Document best practices for workflow version control

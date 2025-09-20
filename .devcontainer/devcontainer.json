@@ -38,12 +38,24 @@
         "cSpell.files": ["**/*.md"],
         "git.enableCommitSigning": true,
         "dev.containers.copyGitConfig": true,
+        "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+        "github.copilot.chat.commitMessageGeneration.instructions": [
+          {
+            "text": "Always use conventional commit message format."
+          }
+        ],
+        "github.copilot.chat.pullRequestDescriptionGeneration.instructions": [
+          {
+            "text": "Always fill the pull request with the following information: \n ## Summary\n <summary of the pull request>\n"
+          }
+        ],
+        "github.copilot.chat.testGeneration.instructions": [
+          {
+            "text": "Always use table-driven tests."
+          }
+        ],
         "mcp": {
           "servers": {
-            "fetch": {
-              "command": "docker",
-              "args": ["run", "-i", "--rm", "mcp/fetch"]
-            },
             "Context7": {
               "command": "docker",
               "args": [
