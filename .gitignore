@@ -3,3 +3,4 @@ dist
 *.out
 bin
 .vscode
+.DS_Store
