@@ -1,0 +1,128 @@
+---
+services:
+  inference-gateway:
+    image: ghcr.io/inference-gateway/inference-gateway:latest
+    container_name: inference-gateway
+    environment:
+      ENVIRONMENT: development
+      SERVER_READ_TIMEOUT: 530s
+      SERVER_WRITE_TIMEOUT: 530s
+      CLIENT_TIMEOUT: 530s
+      CLIENT_IDLE_CONN_TIMEOUT: 30s
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      # GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    networks:
+      - a2a-network
+
+  agent:
+    image: ghcr.io/inference-gateway/n8n-agent:latest
+    container_name: n8n-agent
+    environment:
+      A2A_PORT: 8080
+      A2A_DEBUG: true
+      A2A_AGENT_CLIENT_PROVIDER: ${A2A_AGENT_CLIENT_PROVIDER}
+      A2A_AGENT_CLIENT_MODEL: ${A2A_AGENT_CLIENT_MODEL}
+      A2A_AGENT_CLIENT_BASE_URL: http://inference-gateway:8080/v1
+      A2A_AGENT_STREAMING_ENABLED: true
+      A2A_STREAMING_STATUS_UPDATE_INTERVAL: 1s
+      A2A_QUEUE_CLEANUP_INTERVAL: 500s
+    networks:
+      - a2a-network
+
+  a2a-cli:
+    image: ghcr.io/inference-gateway/cli:latest
+    pull_policy: always
+    environment:
+      INFER_LOGGING_DEBUG: true
+      INFER_GATEWAY_URL: http://inference-gateway:8080
+      INFER_A2A_ENABLED: true
+      INFER_TOOLS_ENABLED: true
+      INFER_TOOLS_QUERY_ENABLED: true
+      INFER_TOOLS_TASK_ENABLED:  true
+      INFER_AGENT_MODEL: ${A2A_AGENT_CLIENT_PROVIDER}/${A2A_AGENT_CLIENT_MODEL}
+      INFER_A2A_AGENTS: 'http://agent:8080'
+      INFER_A2A_CACHE_ENABLED: false
+    command:
+      - chat
+    networks:
+      - a2a-network
+    profiles:
+      - manual
+
+  cli:
+    image: ubuntu:24.04
+    volumes:
+      - ./:/home/ubuntu/app
+    working_dir: /home/ubuntu/app
+    environment:
+      PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
+    env_file:
+      - .env
+    command:
+      - bash
+      - -c
+      - "apt-get update && apt-get install -y curl && curl -sSLf https://raw.github.com/edenreich/n8n-cli/main/install.sh | sh && bash"
+    profiles:
+      - manual
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: contact-form-ai-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      NODE_ENV: development
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_DIAGNOSTICS_ENABLED: false
+      N8N_VERSION_NOTIFICATIONS_ENABLED: false
+      N8N_ENCRYPTION_KEY: your-encryption-key-here
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - --spider
+        - http://localhost:5678/healthz
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: contact-form-ai-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MH_HOSTNAME: mailhog
+
+  cli-dev:
+    image: golang:1.25-alpine
+    volumes:
+      - ../..:/go/src/project
+      - ./:/go/src/example
+    working_dir: /go/src/project
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - "go build -o $(go env GOPATH)/bin/n8n . && cd /go/src/example && sh"
+    profiles:
+      - manual
+
+volumes:
+  n8n_data:
+    driver: local
+
+networks:
+  a2a-network:
+    driver: bridge
