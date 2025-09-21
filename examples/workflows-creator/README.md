@@ -8,3 +8,6 @@ An advanced example demonstrating how to dynamically create n8n workflows using 
 
 
 ## 🎯 What You'll Learn
+
+- How to create workflows from a single prompt using the A2A protocol
+- How to sync the generated workflow to your n8n instance
