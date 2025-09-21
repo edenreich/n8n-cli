@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0](https://github.com/edenreich/n8n-cli/compare/v0.5.2...v0.6.0) (2025-09-21)
+
+### ✨ Features
+
+* **executions:** Implement workflow execution history retrieval ([#13](https://github.com/edenreich/n8n-cli/issues/13)) ([dfb1ad8](https://github.com/edenreich/n8n-cli/commit/dfb1ad8e43459d8187e60d7e11991f3b186cec34))
+
+### ♻️ Improvements
+
+* Update generated types and OpenAPI spec for execution status and retry functionality ([#29](https://github.com/edenreich/n8n-cli/issues/29)) ([c78a1f1](https://github.com/edenreich/n8n-cli/commit/c78a1f111be2e6ae9724b98ae52862f4a6aecb9a))
+* **workflow:** Rename AI Summary Agent to Summary Agent and update connections ([034395d](https://github.com/edenreich/n8n-cli/commit/034395dbaeae39e174663cc85f658e1b30386f5e))
+
+### 👷 CI
+
+* Add claude GitHub actions ([#27](https://github.com/edenreich/n8n-cli/issues/27)) ([90692cc](https://github.com/edenreich/n8n-cli/commit/90692cc0a84b49c86684cebd61dd6514ee2bac0e))
+
+### 📚 Documentation
+
+* **examples:** Add GitHub Actions workflows for syncing and restoring n8n workflows ([dfe2b08](https://github.com/edenreich/n8n-cli/commit/dfe2b087745ba6b1f3eb43f91c7efe547f61623d))
+* Revise CLAUDE.md for improved structure and clarity ([a7aee87](https://github.com/edenreich/n8n-cli/commit/a7aee87de67e73bde539e53f1dbcdc97280fb2d6))
+
+### 🔧 Miscellaneous
+
+* Add issue templates for bug reports, feature requests, and refactor requests ([60b29eb](https://github.com/edenreich/n8n-cli/commit/60b29ebb85b890dfa04b317d15973e0587e147e3))
+* **copilot:** Enable instruction files for GitHub Copilot chat code generation ([7dec111](https://github.com/edenreich/n8n-cli/commit/7dec11146f13ce32286190e74cef961f1f5f1159))
+* **copilot:** Update Copilot instructions for commit message and PR description formats ([0fd45c4](https://github.com/edenreich/n8n-cli/commit/0fd45c4bd066d0087f3bccc70eea3ab5d556775e))
+* Rename it to workflows-creator ([f2364f8](https://github.com/edenreich/n8n-cli/commit/f2364f81a2e9a9de09a57ad845977f2873fd7986))
+* **todos:** Update TODOs - remove some auto generated TODOs that doesn't make sense ([d7dc125](https://github.com/edenreich/n8n-cli/commit/d7dc12556d8c17255a61ddd6aaf76d8ee77accb0))
+* Update README.md ([861b2d4](https://github.com/edenreich/n8n-cli/commit/861b2d4f899698b760fa7e81c8c161fc66de389b))
+* Update tags management section in TODOs to reflect completed tasks ([a411678](https://github.com/edenreich/n8n-cli/commit/a411678176276daec3687930444c1e4736a72485))
+
 ## [0.5.2](https://github.com/edenreich/n8n-cli/compare/v0.5.1...v0.5.2) (2025-05-20)
 
 ### ♻️ Improvements
