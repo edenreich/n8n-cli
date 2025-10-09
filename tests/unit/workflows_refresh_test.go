@@ -442,6 +442,7 @@ active: true
 			cmd.Flags().StringP("output", "o", "json", "Output format")
 			cmd.Flags().Bool("no-truncate", false, "Include all fields in output")
 			cmd.Flags().Bool("all", false, "Refresh all workflows")
+			cmd.Flags().Bool("recursive", false, "Scan subdirectories recursively")
 			cmd.SetOut(outBuf)
 			cmd.SetErr(errBuf)
 
@@ -475,7 +476,7 @@ active: true
 				}
 			}
 
-			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output, minimal, all)
+			err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, directory, dryRun, overwrite, output, minimal, all, false)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -619,7 +620,7 @@ func TestNestedDirectorySupport(t *testing.T) {
 		cmd.SetOut(new(bytes.Buffer))
 		cmd.SetErr(new(bytes.Buffer))
 
-		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false)
+		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, true)
 		require.NoError(t, err)
 
 		// Verify that files were updated in their original nested locations
@@ -702,7 +703,7 @@ func TestNestedDirectorySupport(t *testing.T) {
 		cmd.SetOut(new(bytes.Buffer))
 		cmd.SetErr(new(bytes.Buffer))
 
-		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, true)
+		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, true, true)
 		require.NoError(t, err)
 
 		// Verify existing workflow was updated in its nested location
@@ -724,5 +725,109 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "new1", newWorkflow["id"], "New workflow should be created")
 		assert.Equal(t, true, newWorkflow["active"], "New workflow should have active=true")
+	})
+
+	t.Run("Recursive flag controls nested directory scanning", func(t *testing.T) {
+		testDir := filepath.Join(tempDir, "recursive_flag_test")
+		err := os.MkdirAll(testDir, 0755)
+		require.NoError(t, err)
+
+		// Create nested directory structure
+		subDir := filepath.Join(testDir, "subdir")
+		err = os.MkdirAll(subDir, 0755)
+		require.NoError(t, err)
+
+		// Create workflow in root directory
+		rootWorkflow := n8n.Workflow{
+			Id:     stringPtr("root1"),
+			Name:   "Root Workflow",
+			Active: boolPtr(false),
+		}
+
+		// Create workflow in subdirectory
+		subWorkflow := n8n.Workflow{
+			Id:     stringPtr("sub1"),
+			Name:   "Sub Workflow",
+			Active: boolPtr(false),
+		}
+
+		encoder := n8n.NewWorkflowEncoder(true)
+		
+		// Write workflows
+		rootContent, err := encoder.EncodeToJSON(rootWorkflow)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(testDir, "Root_Workflow.json"), rootContent, 0644)
+		require.NoError(t, err)
+
+		subContent, err := encoder.EncodeToJSON(subWorkflow)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(subDir, "Sub_Workflow.json"), subContent, 0644)
+		require.NoError(t, err)
+
+		// Mock client responses
+		fakeClient := &clientfakes.FakeClientInterface{}
+		fakeClient.GetWorkflowCalls(func(id string) (*n8n.Workflow, error) {
+			switch id {
+			case "root1":
+				return &n8n.Workflow{
+					Id:     stringPtr("root1"),
+					Name:   "Root Workflow",
+					Active: boolPtr(true),
+				}, nil
+			case "sub1":
+				return &n8n.Workflow{
+					Id:     stringPtr("sub1"),
+					Name:   "Sub Workflow",
+					Active: boolPtr(true),
+				}, nil
+			}
+			return nil, errors.New("workflow not found")
+		})
+
+		// Test without recursive flag (should only find root workflow)
+		cmd := &cobra.Command{}
+		cmd.Flags().StringP("directory", "d", "", "Directory")
+		cmd.Flags().Bool("dry-run", false, "Dry run")
+		cmd.Flags().Bool("overwrite", false, "Overwrite")
+		cmd.Flags().StringP("output", "o", "json", "Output format")
+		cmd.Flags().Bool("no-truncate", false, "Include all fields in output")
+		cmd.Flags().Bool("all", false, "Refresh all workflows")
+		cmd.Flags().Bool("recursive", false, "Scan subdirectories recursively")
+		cmd.SetOut(new(bytes.Buffer))
+		cmd.SetErr(new(bytes.Buffer))
+
+		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, false)
+		require.NoError(t, err)
+
+		// Verify root workflow was updated
+		updatedRootContent, err := os.ReadFile(filepath.Join(testDir, "Root_Workflow.json"))
+		require.NoError(t, err)
+
+		var updatedRootWorkflow map[string]interface{}
+		err = json.Unmarshal(updatedRootContent, &updatedRootWorkflow)
+		require.NoError(t, err)
+		assert.Equal(t, true, updatedRootWorkflow["active"], "Root workflow should be updated to active=true")
+
+		// Verify sub workflow was NOT updated (should still be false)
+		originalSubContent, err := os.ReadFile(filepath.Join(subDir, "Sub_Workflow.json"))
+		require.NoError(t, err)
+
+		var originalSubWorkflow map[string]interface{}
+		err = json.Unmarshal(originalSubContent, &originalSubWorkflow)
+		require.NoError(t, err)
+		assert.Equal(t, false, originalSubWorkflow["active"], "Sub workflow should NOT be updated without recursive flag")
+
+		// Test with recursive flag (should find both workflows)
+		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, true)
+		require.NoError(t, err)
+
+		// Verify sub workflow was now updated
+		updatedSubContent, err := os.ReadFile(filepath.Join(subDir, "Sub_Workflow.json"))
+		require.NoError(t, err)
+
+		var updatedSubWorkflow map[string]interface{}
+		err = json.Unmarshal(updatedSubContent, &updatedSubWorkflow)
+		require.NoError(t, err)
+		assert.Equal(t, true, updatedSubWorkflow["active"], "Sub workflow should be updated to active=true with recursive flag")
 	})
 }

@@ -109,6 +109,7 @@ func init() {
 	SyncCmd.Flags().Bool("refresh", true, "Refresh the local state with the remote state")
 	SyncCmd.Flags().StringP("output", "o", "", "Output format for refreshed workflow files (json or yaml). If not specified, uses the existing file extension in the directory")
 	SyncCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance when refreshing, not just those in the directory")
+	SyncCmd.Flags().Bool("recursive", false, "Scan subdirectories recursively for workflow files")
 
 	// nolint:errcheck
 	SyncCmd.MarkFlagRequired("directory")
@@ -122,6 +123,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	prune, _ := cmd.Flags().GetBool("prune")
 	refresh, _ := cmd.Flags().GetBool("refresh")
 	all, _ := cmd.Flags().GetBool("all")
+	recursive, _ := cmd.Flags().GetBool("recursive")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
@@ -140,36 +142,69 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	localWorkflowIDs := make(map[string]bool)
 	updatedWorkflows := make(map[string]bool)
 
-	// Walk through all subdirectories recursively
-	err := filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
-			if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
-				localWorkflowIDs[workflowID] = true
-			}
-
-			result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
+	var err error
+	if recursive {
+		// Walk through all subdirectories recursively
+		err = filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
-				return fmt.Errorf("error processing workflow file %s: %w", path, err)
+				return err
 			}
 
-			if result.WorkflowID != "" {
-				updatedWorkflows[result.WorkflowID] = true
+			if d.IsDir() {
+				return nil
+			}
+
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+				if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
+					localWorkflowIDs[workflowID] = true
+				}
+
+				result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
+				if err != nil {
+					return fmt.Errorf("error processing workflow file %s: %w", path, err)
+				}
+
+				if result.WorkflowID != "" {
+					updatedWorkflows[result.WorkflowID] = true
+				}
+			}
+			return nil
+		})
+	} else {
+		// Only process files in the root directory
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			return fmt.Errorf("error reading directory %s: %w", directory, err)
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			ext := strings.ToLower(filepath.Ext(entry.Name()))
+			if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+				path := filepath.Join(directory, entry.Name())
+				
+				if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
+					localWorkflowIDs[workflowID] = true
+				}
+
+				result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
+				if err != nil {
+					return fmt.Errorf("error processing workflow file %s: %w", path, err)
+				}
+
+				if result.WorkflowID != "" {
+					updatedWorkflows[result.WorkflowID] = true
+				}
 			}
 		}
-		return nil
-	})
+	}
 
 	if err != nil {
-		return fmt.Errorf("error walking directory %s: %w", directory, err)
+		return fmt.Errorf("error processing directory %s: %w", directory, err)
 	}
 
 	if prune {
@@ -190,7 +225,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 			cmd.Println("No output format specified, maintaining existing file formats")
 		}
 
-		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, output, minimal, all); err != nil {
+		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, output, minimal, all, recursive); err != nil {
 			return fmt.Errorf("error refreshing workflows after sync: %w", err)
 		}
 

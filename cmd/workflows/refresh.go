@@ -50,6 +50,7 @@ func init() {
 	refreshCmd.Flags().StringP("output", "o", "json", "Output format for new workflow files (json or yaml)")
 	refreshCmd.Flags().Bool("no-truncate", false, "Include all fields in output files, including null and optional fields")
 	refreshCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance, not just those in the directory")
+	refreshCmd.Flags().Bool("recursive", false, "Scan subdirectories recursively for workflow files")
 	rootcmd.GetWorkflowsCmd().AddCommand(refreshCmd)
 
 	// nolint:errcheck
@@ -65,6 +66,7 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 	output, _ := cmd.Flags().GetString("output")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	all, _ := cmd.Flags().GetBool("all")
+	recursive, _ := cmd.Flags().GetBool("recursive")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
@@ -77,16 +79,16 @@ func RefreshWorkflows(cmd *cobra.Command, args []string) error {
 
 	minimal := !noTruncate
 
-	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal, all)
+	return RefreshWorkflowsWithClient(cmd, client, directory, dryRun, overwrite, output, minimal, all, recursive)
 }
 
 // RefreshWorkflowsWithClient is the testable version of RefreshWorkflows that accepts a client interface
-func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, directory string, dryRun bool, overwrite bool, output string, minimal bool, all bool) error {
+func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, directory string, dryRun bool, overwrite bool, output string, minimal bool, all bool, recursive bool) error {
 	if err := ensureDirectoryExists(cmd, directory, dryRun); err != nil {
 		return err
 	}
 
-	localFiles, err := extractLocalWorkflows(directory)
+	localFiles, err := extractLocalWorkflows(directory, recursive)
 	if err != nil {
 		return err
 	}
@@ -158,48 +160,84 @@ func ensureDirectoryExists(cmd *cobra.Command, directory string, dryRun bool) er
 	return nil
 }
 
-// extractLocalWorkflows reads local workflow files recursively and returns a map of workflow IDs to file paths
-func extractLocalWorkflows(directory string) (map[string]string, error) {
+// extractLocalWorkflows reads local workflow files and returns a map of workflow IDs to file paths
+func extractLocalWorkflows(directory string, recursive bool) (map[string]string, error) {
 	localFiles := make(map[string]string)
 
-	err := filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			if os.IsNotExist(err) {
+	if recursive {
+		err := filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+
+			if d.IsDir() {
 				return nil
 			}
-			return err
-		}
 
-		if d.IsDir() {
-			return nil
-		}
-
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext != ".json" && ext != ".yaml" && ext != ".yml" {
-			return nil
-		}
-
-		workflowID, err := ExtractWorkflowIDFromFile(path)
-		if err != nil || workflowID == "" {
-			return nil
-		}
-
-		if existingPath, exists := localFiles[workflowID]; exists {
-			existingExt := strings.ToLower(filepath.Ext(existingPath))
-			currentExt := strings.ToLower(filepath.Ext(path))
-
-			if (currentExt == ".yaml" || currentExt == ".yml") && existingExt == ".json" {
-				localFiles[workflowID] = path
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			if ext != ".json" && ext != ".yaml" && ext != ".yml" {
+				return nil
 			}
+
+			workflowID, err := ExtractWorkflowIDFromFile(path)
+			if err != nil || workflowID == "" {
+				return nil
+			}
+
+			if existingPath, exists := localFiles[workflowID]; exists {
+				existingExt := strings.ToLower(filepath.Ext(existingPath))
+				currentExt := strings.ToLower(filepath.Ext(path))
+
+				if (currentExt == ".yaml" || currentExt == ".yml") && existingExt == ".json" {
+					localFiles[workflowID] = path
+				}
+				return nil
+			}
+
+			localFiles[workflowID] = path
 			return nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("error walking directory: %w", err)
+		}
+	} else {
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			return nil, fmt.Errorf("error reading directory: %w", err)
 		}
 
-		localFiles[workflowID] = path
-		return nil
-	})
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
 
-	if err != nil {
-		return nil, fmt.Errorf("error walking directory: %w", err)
+			ext := strings.ToLower(filepath.Ext(entry.Name()))
+			if ext != ".json" && ext != ".yaml" && ext != ".yml" {
+				continue
+			}
+
+			path := filepath.Join(directory, entry.Name())
+			workflowID, err := ExtractWorkflowIDFromFile(path)
+			if err != nil || workflowID == "" {
+				continue
+			}
+
+			if existingPath, exists := localFiles[workflowID]; exists {
+				existingExt := strings.ToLower(filepath.Ext(existingPath))
+				currentExt := strings.ToLower(filepath.Ext(path))
+
+				if (currentExt == ".yaml" || currentExt == ".yml") && existingExt == ".json" {
+					localFiles[workflowID] = path
+				}
+				continue
+			}
+
+			localFiles[workflowID] = path
+		}
 	}
 
 	return localFiles, nil

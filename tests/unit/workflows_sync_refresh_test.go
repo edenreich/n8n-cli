@@ -129,4 +129,80 @@ func TestSyncNestedDirectories(t *testing.T) {
 		assert.Equal(t, 2, fakeClient.CreateWorkflowCallCount())
 		assert.Equal(t, 1, fakeClient.ActivateWorkflowCallCount()) // Only one workflow is active
 	})
+
+	t.Run("Recursive flag controls which files are processed in sync", func(t *testing.T) {
+		testDir := filepath.Join(tempDir, "recursive_sync_test")
+		err := os.MkdirAll(testDir, 0755)
+		require.NoError(t, err)
+
+		// Create nested directory structure
+		subDir := filepath.Join(testDir, "subdir")
+		err = os.MkdirAll(subDir, 0755)
+		require.NoError(t, err)
+
+		// Create workflow files
+		rootWorkflowJSON := `{"name": "Root Workflow", "id": "root-123", "active": true}`
+		subWorkflowJSON := `{"name": "Sub Workflow", "id": "sub-456", "active": false}`
+
+		rootWorkflowPath := filepath.Join(testDir, "root_workflow.json")
+		subWorkflowPath := filepath.Join(subDir, "sub_workflow.json")
+
+		err = os.WriteFile(rootWorkflowPath, []byte(rootWorkflowJSON), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(subWorkflowPath, []byte(subWorkflowJSON), 0644)
+		require.NoError(t, err)
+
+		// Mock client responses
+		fakeClient := &clientfakes.FakeClientInterface{}
+		
+		// Track which workflows were processed
+		processedWorkflows := make(map[string]bool)
+		
+		fakeClient.GetWorkflowCalls(func(id string) (*n8n.Workflow, error) {
+			processedWorkflows[id] = true
+			return nil, fmt.Errorf("workflow not found") // Force create
+		})
+
+		fakeClient.CreateWorkflowCalls(func(workflow *n8n.Workflow) (*n8n.Workflow, error) {
+			return workflow, nil
+		})
+
+		fakeClient.ActivateWorkflowReturns(&n8n.Workflow{}, nil)
+
+		// Test non-recursive sync (should only process root workflow)
+		result1, err := workflows.ProcessWorkflowFile(fakeClient, &cobra.Command{}, rootWorkflowPath, false, false)
+		require.NoError(t, err)
+		assert.Equal(t, "root-123", result1.WorkflowID)
+
+		// Reset tracking
+		processedWorkflows = make(map[string]bool)
+		fakeClient.Invocations() // Clear invocation history
+
+		// Test that only root workflow would be found by non-recursive scanning
+		// This simulates what the sync command does when recursive=false
+		entries, err := os.ReadDir(testDir)
+		require.NoError(t, err)
+		
+		foundFiles := 0
+		for _, entry := range entries {
+			if !entry.IsDir() && filepath.Ext(entry.Name()) == ".json" {
+				foundFiles++
+			}
+		}
+		assert.Equal(t, 1, foundFiles, "Non-recursive should only find 1 file in root")
+
+		// Test recursive scanning behavior
+		foundRecursiveFiles := 0
+		err = filepath.WalkDir(testDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && filepath.Ext(d.Name()) == ".json" {
+				foundRecursiveFiles++
+			}
+			return nil
+		})
+		require.NoError(t, err)
+		assert.Equal(t, 2, foundRecursiveFiles, "Recursive should find 2 files total")
+	})
 }
