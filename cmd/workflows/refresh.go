@@ -158,45 +158,48 @@ func ensureDirectoryExists(cmd *cobra.Command, directory string, dryRun bool) er
 	return nil
 }
 
-// extractLocalWorkflows reads local workflow files and returns a map of workflow IDs to file paths
+// extractLocalWorkflows reads local workflow files recursively and returns a map of workflow IDs to file paths
 func extractLocalWorkflows(directory string) (map[string]string, error) {
 	localFiles := make(map[string]string)
 
-	files, err := os.ReadDir(directory)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return localFiles, nil
-		}
-		return nil, fmt.Errorf("error reading directory: %w", err)
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
+	err := filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
 		}
 
-		ext := strings.ToLower(filepath.Ext(file.Name()))
+		if d.IsDir() {
+			return nil
+		}
+
+		ext := strings.ToLower(filepath.Ext(d.Name()))
 		if ext != ".json" && ext != ".yaml" && ext != ".yml" {
-			continue
+			return nil
 		}
 
-		filePath := filepath.Join(directory, file.Name())
-		workflowID, err := ExtractWorkflowIDFromFile(filePath)
+		workflowID, err := ExtractWorkflowIDFromFile(path)
 		if err != nil || workflowID == "" {
-			continue
+			return nil
 		}
 
 		if existingPath, exists := localFiles[workflowID]; exists {
 			existingExt := strings.ToLower(filepath.Ext(existingPath))
-			currentExt := strings.ToLower(filepath.Ext(filePath))
+			currentExt := strings.ToLower(filepath.Ext(path))
 
 			if (currentExt == ".yaml" || currentExt == ".yml") && existingExt == ".json" {
-				localFiles[workflowID] = filePath
+				localFiles[workflowID] = path
 			}
-			continue
+			return nil
 		}
 
-		localFiles[workflowID] = filePath
+		localFiles[workflowID] = path
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error walking directory: %w", err)
 	}
 
 	return localFiles, nil
@@ -217,23 +220,31 @@ func determineFilePathAndAction(workflow n8n.Workflow, localFiles map[string]str
 		extension = ".yaml"
 	}
 
-	defaultPath := filepath.Join(directory, sanitizedName+extension)
-
+	// Check if we have an existing file to preserve directory structure
 	existingPath, exists := localFiles[*workflow.Id]
-	if !exists || overwrite {
-		return defaultPath, "Creating"
+	if exists && !overwrite {
+		// Preserve the existing file's directory structure
+		existingExt := filepath.Ext(existingPath)
+		if (strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml") && strings.ToLower(existingExt) == ".json" {
+			// Convert to YAML but preserve directory structure
+			dir := filepath.Dir(existingPath)
+			convertedPath := filepath.Join(dir, sanitizedName+".yaml")
+			return convertedPath, "Converting"
+		}
+
+		if strings.ToLower(output) == "json" && (strings.ToLower(existingExt) == ".yaml" || strings.ToLower(existingExt) == ".yml") {
+			// Convert to JSON but preserve directory structure
+			dir := filepath.Dir(existingPath)
+			convertedPath := filepath.Join(dir, sanitizedName+".json")
+			return convertedPath, "Converting"
+		}
+
+		return existingPath, "Updating"
 	}
 
-	existingExt := filepath.Ext(existingPath)
-	if (strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml") && strings.ToLower(existingExt) == ".json" {
-		return defaultPath, "Converting"
-	}
-
-	if strings.ToLower(output) == "json" && (strings.ToLower(existingExt) == ".yaml" || strings.ToLower(existingExt) == ".yml") {
-		return defaultPath, "Converting"
-	}
-
-	return existingPath, "Updating"
+	// No existing file or overwrite mode - create in root directory
+	defaultPath := filepath.Join(directory, sanitizedName+extension)
+	return defaultPath, "Creating"
 }
 
 // serializeWorkflow serializes a workflow to JSON or YAML
@@ -324,6 +335,12 @@ func processWorkflow(cmd *cobra.Command, workflow n8n.Workflow, localFiles map[s
 				workflow.Name, *workflow.Id, filePath)
 		}
 		return nil
+	}
+
+	// Ensure the directory exists before writing the file
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("error creating directory '%s': %w", dir, err)
 	}
 
 	if err := os.WriteFile(filePath, content, 0644); err != nil {

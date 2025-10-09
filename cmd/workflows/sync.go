@@ -127,9 +127,9 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("directory is required")
 	}
 
-	files, err := os.ReadDir(directory)
-	if err != nil {
-		return fmt.Errorf("error reading directory: %w", err)
+	// Check if directory exists
+	if _, err := os.Stat(directory); err != nil {
+		return fmt.Errorf("error accessing directory: %w", err)
 	}
 
 	apiKey := viper.Get("api_key").(string)
@@ -140,28 +140,36 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	localWorkflowIDs := make(map[string]bool)
 	updatedWorkflows := make(map[string]bool)
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
+	// Walk through all subdirectories recursively
+	err := filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
 
-		ext := strings.ToLower(filepath.Ext(file.Name()))
-		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
-			filePath := filepath.Join(directory, file.Name())
+		if d.IsDir() {
+			return nil
+		}
 
-			if workflowID, err := ExtractWorkflowIDFromFile(filePath); err == nil && workflowID != "" {
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+			if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
 				localWorkflowIDs[workflowID] = true
 			}
 
-			result, err := ProcessWorkflowFile(client, cmd, filePath, dryRun, prune)
+			result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
 			if err != nil {
-				return fmt.Errorf("error processing workflow file %s: %w", filePath, err)
+				return fmt.Errorf("error processing workflow file %s: %w", path, err)
 			}
 
 			if result.WorkflowID != "" {
 				updatedWorkflows[result.WorkflowID] = true
 			}
 		}
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("error walking directory %s: %w", directory, err)
 	}
 
 	if prune {
