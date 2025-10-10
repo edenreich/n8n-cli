@@ -1,0 +1,82 @@
+{
+  "active": true,
+  "connections": {
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Generate AI Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Generate AI Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Return Response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "VExaHPSjABietb0t",
+  "name": "AI Response Generator",
+  "nodes": [
+    {
+      "id": "webhook-node-2",
+      "name": "Chat Webhook",
+      "parameters": {
+        "options": {},
+        "path": "webhook/ai-chat",
+        "responseMode": "responseNode"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1
+    },
+    {
+      "id": "openai-node-1",
+      "name": "Generate AI Response",
+      "parameters": {
+        "model": "gpt-4",
+        "prompt": "={{ $json.message }}",
+        "temperature": 0.7
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1
+    },
+    {
+      "id": "response-node-1",
+      "name": "Return Response",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { response: $json.choices[0].message.content } }}"
+      },
+      "position": [
+        650,
+        300
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "versionId": "1"
+}

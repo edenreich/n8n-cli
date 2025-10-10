@@ -1,0 +1,88 @@
+{
+  "active": false,
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Fetch External Data",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Fetch External Data": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Store in Database",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "P5wsGd9Gswqkmr91",
+  "name": "Data Sync Workflow",
+  "nodes": [
+    {
+      "id": "schedule-node-1",
+      "name": "Every 6 Hours",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1
+    },
+    {
+      "id": "http-node-1",
+      "name": "Fetch External Data",
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "url": "https://api.example.com/data"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1
+    },
+    {
+      "id": "postgres-node-1",
+      "name": "Store in Database",
+      "parameters": {
+        "columns": "data,synced_at",
+        "operation": "create",
+        "table": "synced_data"
+      },
+      "position": [
+        650,
+        300
+      ],
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "versionId": "1"
+}

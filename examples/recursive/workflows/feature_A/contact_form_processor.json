@@ -1,0 +1,83 @@
+{
+  "active": true,
+  "connections": {
+    "Contact Form Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Process Form Data",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Process Form Data": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Email Notification",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "3l5etzdy7yjjddZs",
+  "name": "Contact Form Processor",
+  "nodes": [
+    {
+      "id": "webhook-node-1",
+      "name": "Contact Form Webhook",
+      "parameters": {
+        "options": {},
+        "path": "webhook/contact-form",
+        "responseMode": "onReceived"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1
+    },
+    {
+      "id": "function-node-1",
+      "name": "Process Form Data",
+      "parameters": {
+        "functionCode": "// Extract form data\nconst formData = $input.item.json;\n\nreturn {\n  json: {\n    name: formData.name,\n    email: formData.email,\n    message: formData.message,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1
+    },
+    {
+      "id": "email-node-1",
+      "name": "Send Email Notification",
+      "parameters": {
+        "fromEmail": "no-reply@example.com",
+        "operation": "sendEmail",
+        "subject": "New Contact Form Submission",
+        "text": "={{ $json.name }} ({{ $json.email }}) sent: {{ $json.message }}",
+        "toEmail": "admin@example.com"
+      },
+      "position": [
+        650,
+        300
+      ],
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "versionId": "1"
+}

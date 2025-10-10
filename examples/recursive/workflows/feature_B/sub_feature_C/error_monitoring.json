@@ -1,0 +1,112 @@
+{
+  "active": true,
+  "connections": {
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Evaluate Severity",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Evaluate Severity": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Should Alert?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Should Alert?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Slack Alert",
+            "type": "main"
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "id": "U1qNGJM4aKoLlCVb",
+  "name": "Error Monitoring \u0026 Alerts",
+  "nodes": [
+    {
+      "id": "webhook-node-3",
+      "name": "Error Webhook",
+      "parameters": {
+        "options": {},
+        "path": "webhook/error-report",
+        "responseMode": "onReceived"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1
+    },
+    {
+      "id": "function-node-2",
+      "name": "Evaluate Severity",
+      "parameters": {
+        "functionCode": "// Check error severity\nconst error = $input.item.json;\nconst severity = error.level || 'info';\n\nif (severity === 'critical' || severity === 'error') {\n  return {\n    json: {\n      shouldAlert: true,\n      ...error\n    }\n  };\n}\n\nreturn {\n  json: {\n    shouldAlert: false,\n    ...error\n  }\n};"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1
+    },
+    {
+      "id": "if-node-1",
+      "name": "Should Alert?",
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.shouldAlert }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "position": [
+        650,
+        300
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1
+    },
+    {
+      "id": "slack-node-1",
+      "name": "Send Slack Alert",
+      "parameters": {
+        "channel": "#alerts",
+        "text": "🚨 Critical Error Detected:\n{{ $json.message }}\nService: {{ $json.service }}\nTimestamp: {{ $json.timestamp }}"
+      },
+      "position": [
+        850,
+        200
+      ],
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "versionId": "1"
+}

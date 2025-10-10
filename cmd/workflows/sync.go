@@ -109,6 +109,7 @@ func init() {
 	SyncCmd.Flags().Bool("refresh", true, "Refresh the local state with the remote state")
 	SyncCmd.Flags().StringP("output", "o", "", "Output format for refreshed workflow files (json or yaml). If not specified, uses the existing file extension in the directory")
 	SyncCmd.Flags().Bool("all", false, "Refresh all workflows from n8n instance when refreshing, not just those in the directory")
+	SyncCmd.Flags().Bool("recursive", false, "Scan subdirectories recursively for workflow files")
 
 	// nolint:errcheck
 	SyncCmd.MarkFlagRequired("directory")
@@ -122,14 +123,14 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	prune, _ := cmd.Flags().GetBool("prune")
 	refresh, _ := cmd.Flags().GetBool("refresh")
 	all, _ := cmd.Flags().GetBool("all")
+	recursive, _ := cmd.Flags().GetBool("recursive")
 
 	if directory == "" {
 		return fmt.Errorf("directory is required")
 	}
 
-	files, err := os.ReadDir(directory)
-	if err != nil {
-		return fmt.Errorf("error reading directory: %w", err)
+	if _, err := os.Stat(directory); err != nil {
+		return fmt.Errorf("error accessing directory: %w", err)
 	}
 
 	apiKey := viper.Get("api_key").(string)
@@ -140,28 +141,67 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 	localWorkflowIDs := make(map[string]bool)
 	updatedWorkflows := make(map[string]bool)
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-
-		ext := strings.ToLower(filepath.Ext(file.Name()))
-		if ext == ".json" || ext == ".yaml" || ext == ".yml" {
-			filePath := filepath.Join(directory, file.Name())
-
-			if workflowID, err := ExtractWorkflowIDFromFile(filePath); err == nil && workflowID != "" {
-				localWorkflowIDs[workflowID] = true
-			}
-
-			result, err := ProcessWorkflowFile(client, cmd, filePath, dryRun, prune)
+	var err error
+	if recursive {
+		err = filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
-				return fmt.Errorf("error processing workflow file %s: %w", filePath, err)
+				return err
 			}
 
-			if result.WorkflowID != "" {
-				updatedWorkflows[result.WorkflowID] = true
+			if d.IsDir() {
+				return nil
+			}
+
+			ext := strings.ToLower(filepath.Ext(d.Name()))
+			if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+				if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
+					localWorkflowIDs[workflowID] = true
+				}
+
+				result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
+				if err != nil {
+					return fmt.Errorf("error processing workflow file %s: %w", path, err)
+				}
+
+				if result.WorkflowID != "" {
+					updatedWorkflows[result.WorkflowID] = true
+				}
+			}
+			return nil
+		})
+	} else {
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			return fmt.Errorf("error reading directory %s: %w", directory, err)
+		}
+
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			ext := strings.ToLower(filepath.Ext(entry.Name()))
+			if ext == ".json" || ext == ".yaml" || ext == ".yml" {
+				path := filepath.Join(directory, entry.Name())
+
+				if workflowID, err := ExtractWorkflowIDFromFile(path); err == nil && workflowID != "" {
+					localWorkflowIDs[workflowID] = true
+				}
+
+				result, err := ProcessWorkflowFile(client, cmd, path, dryRun, prune)
+				if err != nil {
+					return fmt.Errorf("error processing workflow file %s: %w", path, err)
+				}
+
+				if result.WorkflowID != "" {
+					updatedWorkflows[result.WorkflowID] = true
+				}
 			}
 		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("error processing directory %s: %w", directory, err)
 	}
 
 	if prune {
@@ -182,7 +222,7 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 			cmd.Println("No output format specified, maintaining existing file formats")
 		}
 
-		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, output, minimal, all); err != nil {
+		if err := RefreshWorkflowsWithClient(cmd, client, directory, false, overwrite, output, minimal, all, recursive); err != nil {
 			return fmt.Errorf("error refreshing workflows after sync: %w", err)
 		}
 
@@ -249,6 +289,10 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 	}
 
 	result.Name = workflow.Name
+	originalID := ""
+	if workflow.Id != nil {
+		originalID = *workflow.Id
+	}
 
 	var remoteWorkflow *n8n.Workflow
 
@@ -257,6 +301,13 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		if err != nil {
 			return result, err
 		}
+
+		if !dryRun && result.Created && result.WorkflowID != "" {
+			if updateErr := updateWorkflowIDInFile(filePath, result.WorkflowID, ext); updateErr != nil {
+				cmd.Printf("Warning: Could not update workflow ID in file %s: %v\n", filePath, updateErr)
+			}
+		}
+
 		return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 	}
 
@@ -266,6 +317,13 @@ func ProcessWorkflowFile(client n8n.ClientInterface, cmd *cobra.Command, filePat
 		if err != nil {
 			return result, err
 		}
+
+		if !dryRun && result.Created && result.WorkflowID != "" && result.WorkflowID != originalID {
+			if updateErr := updateWorkflowIDInFile(filePath, result.WorkflowID, ext); updateErr != nil {
+				cmd.Printf("Warning: Could not update workflow ID in file %s: %v\n", filePath, updateErr)
+			}
+		}
+
 		return processActivationAndTags(client, cmd, &workflow, result, dryRun)
 	}
 
@@ -663,4 +721,50 @@ func getExistingTagsMap(client n8n.ClientInterface) (map[string]string, error) {
 	}
 
 	return tagMap, nil
+}
+
+// updateWorkflowIDInFile updates the workflow ID in a JSON or YAML file
+func updateWorkflowIDInFile(filePath string, newID string, ext string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading file: %w", err)
+	}
+
+	switch ext {
+	case ".json":
+		var data map[string]interface{}
+		if err := json.Unmarshal(content, &data); err != nil {
+			return fmt.Errorf("error parsing JSON: %w", err)
+		}
+
+		data["id"] = newID
+
+		updatedContent, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return fmt.Errorf("error marshaling JSON: %w", err)
+		}
+
+		if err := os.WriteFile(filePath, updatedContent, 0644); err != nil {
+			return fmt.Errorf("error writing file: %w", err)
+		}
+
+	case ".yaml", ".yml":
+		var data map[string]interface{}
+		if err := yaml.Unmarshal(content, &data); err != nil {
+			return fmt.Errorf("error parsing YAML: %w", err)
+		}
+
+		data["id"] = newID
+
+		updatedContent, err := yaml.Marshal(data)
+		if err != nil {
+			return fmt.Errorf("error marshaling YAML: %w", err)
+		}
+
+		if err := os.WriteFile(filePath, updatedContent, 0644); err != nil {
+			return fmt.Errorf("error writing file: %w", err)
+		}
+	}
+
+	return nil
 }
