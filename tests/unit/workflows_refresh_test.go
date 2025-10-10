@@ -536,7 +536,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err := os.MkdirAll(testDir, 0755)
 		require.NoError(t, err)
 
-		// Create nested directory structure
 		featureADir := filepath.Join(testDir, "feature_A")
 		featureBDir := filepath.Join(testDir, "feature_B")
 		subFeatureDir := filepath.Join(testDir, "feature_C", "sub_feature_D")
@@ -548,7 +547,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = os.MkdirAll(subFeatureDir, 0755)
 		require.NoError(t, err)
 
-		// Create existing workflow files in nested directories
 		workflow1 := n8n.Workflow{
 			Id:     stringPtr("workflow1"),
 			Name:   "Feature A Workflow",
@@ -567,7 +565,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 
 		encoder := n8n.NewWorkflowEncoder(true)
 		
-		// Write workflows to their respective directories
 		content1, err := encoder.EncodeToJSON(workflow1)
 		require.NoError(t, err)
 		err = os.WriteFile(filepath.Join(featureADir, "Feature_A_Workflow.json"), content1, 0644)
@@ -583,7 +580,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = os.WriteFile(filepath.Join(subFeatureDir, "Sub_Feature_D_Workflow.json"), content3, 0644)
 		require.NoError(t, err)
 
-		// Mock the client responses - return updated workflows (active: true)
 		fakeClient := &clientfakes.FakeClientInterface{}
 		fakeClient.GetWorkflowCalls(func(id string) (*n8n.Workflow, error) {
 			switch id {
@@ -609,7 +605,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 			return nil, errors.New("workflow not found")
 		})
 
-		// Run the refresh command
 		cmd := &cobra.Command{}
 		cmd.Flags().StringP("directory", "d", "", "Directory")
 		cmd.Flags().Bool("dry-run", false, "Dry run")
@@ -623,8 +618,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, true)
 		require.NoError(t, err)
 
-		// Verify that files were updated in their original nested locations
-		// Feature A workflow should be updated in place
 		updatedContent1, err := os.ReadFile(filepath.Join(featureADir, "Feature_A_Workflow.json"))
 		require.NoError(t, err)
 
@@ -633,7 +626,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, true, updatedWorkflow1["active"], "Feature A workflow should be updated to active=true")
 
-		// Feature B workflow should be updated in place
 		updatedContent2, err := os.ReadFile(filepath.Join(featureBDir, "Feature_B_Workflow.json"))
 		require.NoError(t, err)
 
@@ -642,7 +634,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, true, updatedWorkflow2["active"], "Feature B workflow should be updated to active=true")
 
-		// Sub Feature D workflow should be updated in place
 		updatedContent3, err := os.ReadFile(filepath.Join(subFeatureDir, "Sub_Feature_D_Workflow.json"))
 		require.NoError(t, err)
 
@@ -657,12 +648,10 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err := os.MkdirAll(testDir, 0755)
 		require.NoError(t, err)
 
-		// Create nested directory structure with some existing workflows
 		featureADir := filepath.Join(testDir, "feature_A")
 		err = os.MkdirAll(featureADir, 0755)
 		require.NoError(t, err)
 
-		// Create one existing workflow
 		existingWorkflow := n8n.Workflow{
 			Id:     stringPtr("existing"),
 			Name:   "Existing Workflow",
@@ -675,7 +664,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = os.WriteFile(filepath.Join(featureADir, "Existing_Workflow.json"), content, 0644)
 		require.NoError(t, err)
 
-		// Mock the client to return both existing and new workflows
 		fakeClient := &clientfakes.FakeClientInterface{}
 		fakeClient.GetWorkflowsReturns(&n8n.WorkflowList{
 			Data: &[]n8n.Workflow{
@@ -692,7 +680,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 			},
 		}, nil)
 
-		// Run refresh with --all flag
 		cmd := &cobra.Command{}
 		cmd.Flags().StringP("directory", "d", "", "Directory")
 		cmd.Flags().Bool("dry-run", false, "Dry run")
@@ -706,7 +693,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, true, true)
 		require.NoError(t, err)
 
-		// Verify existing workflow was updated in its nested location
 		updatedContent, err := os.ReadFile(filepath.Join(featureADir, "Existing_Workflow.json"))
 		require.NoError(t, err)
 
@@ -715,7 +701,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, true, updatedWorkflow["active"], "Existing workflow should be updated to active=true")
 
-		// Verify new workflow was created in root directory (since it has no existing structure)
 		newWorkflowPath := filepath.Join(testDir, "New_Workflow_1.json")
 		newContent, err := os.ReadFile(newWorkflowPath)
 		require.NoError(t, err)
@@ -732,19 +717,16 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err := os.MkdirAll(testDir, 0755)
 		require.NoError(t, err)
 
-		// Create nested directory structure
 		subDir := filepath.Join(testDir, "subdir")
 		err = os.MkdirAll(subDir, 0755)
 		require.NoError(t, err)
 
-		// Create workflow in root directory
 		rootWorkflow := n8n.Workflow{
 			Id:     stringPtr("root1"),
 			Name:   "Root Workflow",
 			Active: boolPtr(false),
 		}
 
-		// Create workflow in subdirectory
 		subWorkflow := n8n.Workflow{
 			Id:     stringPtr("sub1"),
 			Name:   "Sub Workflow",
@@ -753,7 +735,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 
 		encoder := n8n.NewWorkflowEncoder(true)
 		
-		// Write workflows
 		rootContent, err := encoder.EncodeToJSON(rootWorkflow)
 		require.NoError(t, err)
 		err = os.WriteFile(filepath.Join(testDir, "Root_Workflow.json"), rootContent, 0644)
@@ -764,7 +745,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = os.WriteFile(filepath.Join(subDir, "Sub_Workflow.json"), subContent, 0644)
 		require.NoError(t, err)
 
-		// Mock client responses
 		fakeClient := &clientfakes.FakeClientInterface{}
 		fakeClient.GetWorkflowCalls(func(id string) (*n8n.Workflow, error) {
 			switch id {
@@ -784,7 +764,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 			return nil, errors.New("workflow not found")
 		})
 
-		// Test without recursive flag (should only find root workflow)
 		cmd := &cobra.Command{}
 		cmd.Flags().StringP("directory", "d", "", "Directory")
 		cmd.Flags().Bool("dry-run", false, "Dry run")
@@ -799,7 +778,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, false)
 		require.NoError(t, err)
 
-		// Verify root workflow was updated
 		updatedRootContent, err := os.ReadFile(filepath.Join(testDir, "Root_Workflow.json"))
 		require.NoError(t, err)
 
@@ -808,7 +786,6 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, true, updatedRootWorkflow["active"], "Root workflow should be updated to active=true")
 
-		// Verify sub workflow was NOT updated (should still be false)
 		originalSubContent, err := os.ReadFile(filepath.Join(subDir, "Sub_Workflow.json"))
 		require.NoError(t, err)
 
@@ -817,11 +794,9 @@ func TestNestedDirectorySupport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, false, originalSubWorkflow["active"], "Sub workflow should NOT be updated without recursive flag")
 
-		// Test with recursive flag (should find both workflows)
 		err = workflows.RefreshWorkflowsWithClient(cmd, fakeClient, testDir, false, false, "", true, false, true)
 		require.NoError(t, err)
 
-		// Verify sub workflow was now updated
 		updatedSubContent, err := os.ReadFile(filepath.Join(subDir, "Sub_Workflow.json"))
 		require.NoError(t, err)
 

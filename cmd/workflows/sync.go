@@ -129,7 +129,6 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("directory is required")
 	}
 
-	// Check if directory exists
 	if _, err := os.Stat(directory); err != nil {
 		return fmt.Errorf("error accessing directory: %w", err)
 	}
@@ -144,7 +143,6 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 
 	var err error
 	if recursive {
-		// Walk through all subdirectories recursively
 		err = filepath.WalkDir(directory, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -172,7 +170,6 @@ func SyncWorkflows(cmd *cobra.Command, args []string) error {
 			return nil
 		})
 	} else {
-		// Only process files in the root directory
 		entries, err := os.ReadDir(directory)
 		if err != nil {
 			return fmt.Errorf("error reading directory %s: %w", directory, err)

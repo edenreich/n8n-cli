@@ -258,20 +258,16 @@ func determineFilePathAndAction(workflow n8n.Workflow, localFiles map[string]str
 		extension = ".yaml"
 	}
 
-	// Check if we have an existing file to preserve directory structure
 	existingPath, exists := localFiles[*workflow.Id]
 	if exists && !overwrite {
-		// Preserve the existing file's directory structure
 		existingExt := filepath.Ext(existingPath)
 		if (strings.ToLower(output) == "yaml" || strings.ToLower(output) == "yml") && strings.ToLower(existingExt) == ".json" {
-			// Convert to YAML but preserve directory structure
 			dir := filepath.Dir(existingPath)
 			convertedPath := filepath.Join(dir, sanitizedName+".yaml")
 			return convertedPath, "Converting"
 		}
 
 		if strings.ToLower(output) == "json" && (strings.ToLower(existingExt) == ".yaml" || strings.ToLower(existingExt) == ".yml") {
-			// Convert to JSON but preserve directory structure
 			dir := filepath.Dir(existingPath)
 			convertedPath := filepath.Join(dir, sanitizedName+".json")
 			return convertedPath, "Converting"
@@ -280,7 +276,6 @@ func determineFilePathAndAction(workflow n8n.Workflow, localFiles map[string]str
 		return existingPath, "Updating"
 	}
 
-	// No existing file or overwrite mode - create in root directory
 	defaultPath := filepath.Join(directory, sanitizedName+extension)
 	return defaultPath, "Creating"
 }
@@ -375,7 +370,6 @@ func processWorkflow(cmd *cobra.Command, workflow n8n.Workflow, localFiles map[s
 		return nil
 	}
 
-	// Ensure the directory exists before writing the file
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("error creating directory '%s': %w", dir, err)
