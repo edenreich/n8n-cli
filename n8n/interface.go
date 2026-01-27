@@ -5,8 +5,9 @@ package n8n
 //
 //go:generate go tool counterfeiter -o clientfakes/fake_client.go . ClientInterface
 type ClientInterface interface {
-	// GetWorkflows fetches workflows from the n8n API
-	GetWorkflows() (*WorkflowList, error)
+	// GetWorkflows fetches workflows from the n8n API with pagination
+	// limit: maximum number of workflows per page (0 or negative values use default of 100)
+	GetWorkflows(limit int) (*WorkflowList, error)
 	// GetWorkflow fetches a single workflow by its ID
 	GetWorkflow(id string) (*Workflow, error)
 	// ActivateWorkflow activates a workflow by its ID

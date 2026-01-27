@@ -94,7 +94,7 @@ func RefreshWorkflowsWithClient(cmd *cobra.Command, client n8n.ClientInterface, 
 	if all || len(localFiles) == 0 {
 		cmd.Println("Refreshing all workflows from n8n instance")
 
-		workflowList, err := client.GetWorkflows()
+		workflowList, err := client.GetWorkflows(100)
 		if err != nil {
 			return fmt.Errorf("error fetching workflows: %w", err)
 		}

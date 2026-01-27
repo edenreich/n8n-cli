@@ -123,7 +123,7 @@ func listWorkflows(cmd *cobra.Command, args []string) error {
 
 	client := n8n.NewClient(instanceURL, apiKey)
 
-	workflowList, err := client.GetWorkflows()
+	workflowList, err := client.GetWorkflows(100)
 	if err != nil {
 		return err
 	}

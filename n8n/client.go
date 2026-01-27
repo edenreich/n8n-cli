@@ -56,10 +56,13 @@ func (c *Client) logDebug(format string, args ...interface{}) {
 }
 
 // GetWorkflows fetches all workflows from the n8n API, handling pagination automatically
-func (c *Client) GetWorkflows() (*WorkflowList, error) {
+// limit: maximum number of workflows per page (0 or negative values use default of 100)
+func (c *Client) GetWorkflows(limit int) (*WorkflowList, error) {
 	var allWorkflows []Workflow
 	var cursor string
-	limit := 100 // Set a reasonable page size
+	if limit <= 0 {
+		limit = 100
+	}
 
 	for {
 		url := fmt.Sprintf("%s/workflows", c.baseURL)

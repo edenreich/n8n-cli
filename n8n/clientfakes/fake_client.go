@@ -140,9 +140,10 @@ type FakeClientInterface struct {
 		result1 n8n.WorkflowTags
 		result2 error
 	}
-	GetWorkflowsStub        func() (*n8n.WorkflowList, error)
+	GetWorkflowsStub        func(int) (*n8n.WorkflowList, error)
 	getWorkflowsMutex       sync.RWMutex
 	getWorkflowsArgsForCall []struct {
+		arg1 int
 	}
 	getWorkflowsReturns struct {
 		result1 *n8n.WorkflowList
@@ -818,17 +819,18 @@ func (fake *FakeClientInterface) GetWorkflowTagsReturnsOnCall(i int, result1 n8n
 	}{result1, result2}
 }
 
-func (fake *FakeClientInterface) GetWorkflows() (*n8n.WorkflowList, error) {
+func (fake *FakeClientInterface) GetWorkflows(arg1 int) (*n8n.WorkflowList, error) {
 	fake.getWorkflowsMutex.Lock()
 	ret, specificReturn := fake.getWorkflowsReturnsOnCall[len(fake.getWorkflowsArgsForCall)]
 	fake.getWorkflowsArgsForCall = append(fake.getWorkflowsArgsForCall, struct {
-	}{})
+		arg1 int
+	}{arg1})
 	stub := fake.GetWorkflowsStub
 	fakeReturns := fake.getWorkflowsReturns
-	fake.recordInvocation("GetWorkflows", []interface{}{})
+	fake.recordInvocation("GetWorkflows", []interface{}{arg1})
 	fake.getWorkflowsMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -842,10 +844,17 @@ func (fake *FakeClientInterface) GetWorkflowsCallCount() int {
 	return len(fake.getWorkflowsArgsForCall)
 }
 
-func (fake *FakeClientInterface) GetWorkflowsCalls(stub func() (*n8n.WorkflowList, error)) {
+func (fake *FakeClientInterface) GetWorkflowsCalls(stub func(int) (*n8n.WorkflowList, error)) {
 	fake.getWorkflowsMutex.Lock()
 	defer fake.getWorkflowsMutex.Unlock()
 	fake.GetWorkflowsStub = stub
+}
+
+func (fake *FakeClientInterface) GetWorkflowsArgsForCall(i int) int {
+	fake.getWorkflowsMutex.RLock()
+	defer fake.getWorkflowsMutex.RUnlock()
+	argsForCall := fake.getWorkflowsArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeClientInterface) GetWorkflowsReturns(result1 *n8n.WorkflowList, result2 error) {
