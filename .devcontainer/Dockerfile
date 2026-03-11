@@ -6,10 +6,10 @@ ENV GOPATH=/home/vscode/go \
 RUN mkdir -p /home/vscode/go && chown -R vscode:golang /home/vscode/go
 
 # Tool Versions
-ENV TASK_VERSION=v3.45.5 \
-    GOLANG_CI_LINT_VERSION=v2.8.0 \
+ENV TASK_VERSION=v3.48.0 \
+    GOLANG_CI_LINT_VERSION=v2.11.0 \
     GOLANG_COBRA_CLI_VERSION=v1.3.0 \
-    GITHUB_CLI_VERSION=2.86.0 \
+    GITHUB_CLI_VERSION=2.87.3 \
     SEMANTIC_RELEASE_VERSION=v25.0.2
 
 # Install common

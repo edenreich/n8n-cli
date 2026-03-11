@@ -46,14 +46,14 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install GolangCI Lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.0
 
       - name: Install Spectral
         run: npm install -g @stoplight/spectral-cli
 
       - name: Install task
         run: |
-          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.45.5
+          curl -s https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin v3.48.0
 
       - name: Run Claude Code
         id: claude
