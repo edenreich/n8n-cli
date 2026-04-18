@@ -6,6 +6,7 @@ import (
 
 	"github.com/edenreich/n8n-cli/n8n"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCleanWorkflow(t *testing.T) {
@@ -21,12 +22,17 @@ func TestCleanWorkflow(t *testing.T) {
 		UpdatedAt:   updatedAt,
 	}
 
+	staticData := &n8n.Workflow_StaticData{}
+	err := staticData.UnmarshalJSON([]byte(`{"key":"value"}`))
+	require.NoError(t, err)
+
 	workflow := n8n.Workflow{
 		Name:        "Test Workflow",
 		Nodes:       []n8n.Node{node},
 		Connections: nil,
 		CreatedAt:   createdAt,
 		UpdatedAt:   updatedAt,
+		StaticData:  staticData,
 	}
 
 	cleanedWorkflow := n8n.CleanWorkflow(workflow)
@@ -35,6 +41,7 @@ func TestCleanWorkflow(t *testing.T) {
 
 	assert.Nil(t, cleanedWorkflow.CreatedAt, "CreatedAt should be nil")
 	assert.Nil(t, cleanedWorkflow.UpdatedAt, "UpdatedAt should be nil")
+	assert.Nil(t, cleanedWorkflow.StaticData, "StaticData should be nil")
 
 	assert.NotNil(t, cleanedWorkflow.Connections, "Connections should be initialized")
 

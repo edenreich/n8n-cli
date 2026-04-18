@@ -19,6 +19,7 @@ func CleanWorkflow(workflow Workflow) Workflow {
 	cleanedWorkflow.CreatedAt = nil
 	cleanedWorkflow.UpdatedAt = nil
 	cleanedWorkflow.Shared = nil
+	cleanedWorkflow.StaticData = nil
 
 	if cleanedWorkflow.Tags != nil && len(*cleanedWorkflow.Tags) > 0 {
 		cleanTags := make([]Tag, len(*cleanedWorkflow.Tags))
